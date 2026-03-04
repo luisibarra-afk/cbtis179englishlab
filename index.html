@@ -1400,7 +1400,7 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   const sr = new SpeechRec();
   sr.lang = 'en-US';
   sr.continuous = false;
-  sr.interimResults = false;
+  sr.interimResults = true;  // capture partial results so manual stop works
   sr.maxAlternatives = 3;
 
   // Session token: any handler that runs after a new session started is ignored
@@ -1414,10 +1414,11 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   result.textContent = 'Habla ahora...';
 
   let handled = false;
+  let lastTranscript = ''; // best transcript seen so far (interim or final)
   function stale() { return _srSession !== mySession; }
 
   function cleanup() {
-    if (stale()) return;          // a newer session already took over — don't touch shared state
+    if (stale()) return;
     _srSession = null;
     recognition = null;
     _stopWaveform();
@@ -1442,16 +1443,8 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
     }
   }
 
-  sr.onresult = (e) => {
-    if (handled || stale()) return;
-    handled = true;
+  function processResult(best) {
     const tgt = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
-    let best = '';
-    for (let i = 0; i < e.results[0].length; i++) {
-      const alt = e.results[0][i].transcript.toLowerCase().replace(/[^a-z\s']/g, '').trim();
-      if (!best || checkPronunciationMatch(alt, tgt)) best = alt;
-      if (checkPronunciationMatch(best, tgt)) break;
-    }
     pronunAttempts++;
     sessionTotal++;
     const el = document.getElementById('pronun-attempts');
@@ -1470,6 +1463,35 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
         const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
       }
     }
+  }
+
+  sr.onresult = (e) => {
+    if (handled || stale()) return;
+    const tgt = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
+
+    // Collect the latest result (last entry in results list)
+    const latest = e.results[e.results.length - 1];
+    const isFinal = latest.isFinal;
+
+    // Pick best alternative (check all alts for match on final; just [0] on interim)
+    let best = '';
+    const altCount = isFinal ? latest.length : 1;
+    for (let i = 0; i < altCount; i++) {
+      const alt = latest[i].transcript.toLowerCase().replace(/[^a-z\s']/g, '').trim();
+      if (!best || checkPronunciationMatch(alt, tgt)) best = alt;
+      if (checkPronunciationMatch(best, tgt)) break;
+    }
+
+    if (best) {
+      lastTranscript = best; // save in case user presses stop before final arrives
+      // Show live feedback while listening
+      if (!isFinal) { result.textContent = `Escuchando: "${best}"...`; return; }
+    }
+
+    if (isFinal) {
+      handled = true;
+      processResult(best || lastTranscript);
+    }
   };
 
   sr.onerror = (e) => {
@@ -1480,20 +1502,17 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
       result.textContent = '⚠️ Permiso denegado. Permite el micrófono en tu navegador.';
       const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
     } else if (e.error === 'aborted') {
-      // Chrome fires 'aborted' when stopRecognition() cancels mid-session — not a user error
-      handled = true; // prevent countMissed in onend
+      handled = true; // Chrome fires 'aborted' on manual stop — not a user error
     } else if (e.error === 'network') {
       handled = true; cleanup();
       result.className = 'pronun-result error';
       result.textContent = '⚠️ Error de red. Verifica tu conexión.';
     } else {
-      countMissed(); // no-speech + anything else counts as missed
+      countMissed();
     }
   };
 
   sr.onend = () => {
-    // Delay so onresult (which can fire after onend on some browsers/Android)
-    // has a chance to set handled=true before countMissed runs.
     setTimeout(() => { countMissed(); cleanup(); }, 300);
   };
 
@@ -1502,7 +1521,6 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   try {
     sr.start();
   } catch(e) {
-    // sr.start() threw synchronously — wait 250ms for mic to be released, then retry once
     setTimeout(() => {
       if (stale()) return;
       try { sr.start(); } catch(e2) { countMissed(); cleanup(); }
@@ -1510,8 +1528,11 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   }
 
   btn.onclick = () => {
-    // Do NOT set handled=true here — sr.onresult may still fire after sr.stop()
-    // with whatever speech was detected. Let the normal flow process it.
+    // If user presses stop and we already captured some speech, process it now
+    if (!handled && lastTranscript) {
+      handled = true;
+      processResult(lastTranscript);
+    }
     try { sr.stop(); } catch(e) {}
   };
 }
