@@ -1,0 +1,1575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EnglishLab II — CBTis 179</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+</style>
+<style>
+:root {
+  --bg: #0f0f1a;
+  --bg2: #16162a;
+  --bg3: #1e1e35;
+  --card: #22223d;
+  --card2: #2a2a4a;
+  --accent: #6c63ff;
+  --accent2: #ff6584;
+  --accent3: #43e97b;
+  --accent4: #f7971e;
+  --text: #e8e8f0;
+  --text2: #9090b8;
+  --border: #3a3a60;
+  --shadow: 0 8px 32px rgba(108,99,255,0.15);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width:6px; } 
+::-webkit-scrollbar-track { background:var(--bg2); }
+::-webkit-scrollbar-thumb { background:var(--accent); border-radius:3px; }
+
+/* ===== LOADING ===== */
+#loading-screen {
+  position:fixed; inset:0; background:var(--bg); z-index:9999;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+}
+.loading-logo { font-size:3rem; animation:pulse 1.5s ease-in-out infinite; }
+.loading-bar-wrap { width:220px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+.loading-bar { height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:3px; animation:loadbar 1.8s ease forwards; }
+@keyframes loadbar { to { width:100%; } }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+/* ===== STARS BG ===== */
+#stars-canvas { position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.4; }
+
+/* ===== LOGIN ===== */
+#login-screen {
+  position:fixed; inset:0; z-index:100; display:none;
+  background:radial-gradient(ellipse at 60% 30%, #1a1a3e 0%, #0f0f1a 70%);
+  align-items:center; justify-content:center;
+}
+.login-box {
+  background:var(--card); border:1px solid var(--border); border-radius:24px;
+  padding:40px 44px; width:min(420px,90vw); text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 60px rgba(108,99,255,0.1);
+  animation:slideUp 0.4s ease;
+}
+@keyframes slideUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+.login-logo { font-size:3.5rem; margin-bottom:8px; }
+.login-box h1 { font-size:1.8rem; font-weight:900; color:var(--accent); margin-bottom:4px; }
+.login-box p { color:var(--text2); font-size:0.95rem; margin-bottom:28px; }
+.login-box input {
+  width:100%; padding:14px 18px; background:var(--bg2); border:2px solid var(--border);
+  border-radius:var(--radius-sm); color:var(--text); font-family:'Nunito',sans-serif; font-size:1rem; font-weight:600;
+  outline:none; transition:border 0.2s; text-align:center; letter-spacing:3px; font-size:1.3rem;
+  margin-bottom:12px;
+}
+.login-box input:focus { border-color:var(--accent); }
+.login-box input::placeholder { letter-spacing:normal; font-size:0.9rem; color:var(--text2); }
+.btn-primary {
+  width:100%; padding:14px; background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  border:none; border-radius:var(--radius-sm); color:#fff; font-family:'Nunito',sans-serif;
+  font-size:1.05rem; font-weight:800; cursor:pointer; transition:transform 0.15s, box-shadow 0.15s;
+  box-shadow:0 4px 20px rgba(108,99,255,0.4);
+}
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(108,99,255,0.5); }
+.btn-primary:active { transform:translateY(0); }
+.login-error { color:var(--accent2); font-size:0.88rem; margin-top:8px; min-height:20px; }
+
+/* ===== MAIN APP ===== */
+#app { display:none; position:relative; z-index:1; min-height:100vh; }
+
+/* ===== HEADER ===== */
+header {
+  background:rgba(22,22,42,0.9); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border); padding:0 24px;
+  display:flex; align-items:center; justify-content:space-between;
+  height:64px; position:sticky; top:0; z-index:50;
+}
+.header-left { display:flex; align-items:center; gap:12px; }
+.header-logo { font-size:1.5rem; }
+.header-title { font-size:1.1rem; font-weight:900; color:var(--text); }
+.header-title span { color:var(--accent); }
+.header-right { display:flex; align-items:center; gap:16px; }
+.xp-badge {
+  display:flex; align-items:center; gap:6px; background:var(--card);
+  border:1px solid var(--border); border-radius:20px; padding:6px 14px;
+}
+.xp-badge .xp-icon { font-size:1.1rem; }
+.xp-badge .xp-val { font-weight:800; color:var(--accent4); font-size:0.95rem; }
+.user-avatar {
+  width:36px; height:36px; border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:1rem; cursor:pointer;
+}
+
+/* ===== DASHBOARD ===== */
+#dashboard { padding:28px 24px; max-width:900px; margin:0 auto; }
+
+.welcome-banner {
+  background:linear-gradient(135deg,rgba(108,99,255,0.2),rgba(255,101,132,0.1));
+  border:1px solid var(--border); border-radius:20px; padding:24px 28px;
+  margin-bottom:28px; display:flex; align-items:center; gap:20px;
+}
+.welcome-emoji { font-size:3.5rem; }
+.welcome-text h2 { font-size:1.4rem; font-weight:900; margin-bottom:4px; }
+.welcome-text p { color:var(--text2); font-size:0.92rem; line-height:1.5; }
+
+.progress-section { margin-bottom:28px; }
+.progress-section h3 { font-size:1rem; font-weight:700; color:var(--text2); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.progress-bar-wrap { background:var(--bg3); border-radius:8px; height:12px; overflow:hidden; }
+.progress-bar { height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:8px; transition:width 0.5s ease; }
+
+.units-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin-bottom:32px; }
+
+.unit-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:20px; cursor:pointer; transition:transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  position:relative; overflow:hidden;
+}
+.unit-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2)); opacity:0; transition:opacity 0.2s;
+}
+.unit-card:hover::before { opacity:1; }
+.unit-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); border-color:var(--accent); }
+.unit-card.locked { opacity:0.5; cursor:not-allowed; pointer-events:none; }
+.unit-card.locked:hover { transform:none; }
+.unit-card.completed { border-color:var(--accent3); }
+.unit-card.completed::before { background:var(--accent3); opacity:1; }
+
+.unit-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; }
+.unit-icon { font-size:2rem; }
+.unit-badge {
+  font-size:0.72rem; font-weight:800; padding:3px 10px; border-radius:20px;
+  background:var(--bg2); color:var(--text2); text-transform:uppercase; letter-spacing:0.5px;
+}
+.unit-badge.done { background:rgba(67,233,123,0.2); color:var(--accent3); }
+.unit-badge.new { background:rgba(108,99,255,0.2); color:var(--accent); }
+
+.unit-num { font-size:0.8rem; color:var(--text2); font-weight:700; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px; }
+.unit-title { font-size:1.05rem; font-weight:900; margin-bottom:6px; }
+.unit-desc { font-size:0.85rem; color:var(--text2); line-height:1.4; margin-bottom:14px; }
+.unit-meta { display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; color:var(--text2); }
+.unit-xp { font-weight:700; color:var(--accent4); }
+
+/* ===== UNIT VIEW ===== */
+#unit-view { display:none; padding:24px; max-width:760px; margin:0 auto; }
+
+.unit-view-header { display:flex; align-items:center; gap:12px; margin-bottom:24px; }
+.btn-back {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); padding:8px 16px; cursor:pointer; font-family:'Nunito',sans-serif;
+  font-weight:700; font-size:0.9rem; display:flex; align-items:center; gap:6px;
+  transition:background 0.2s;
+}
+.btn-back:hover { background:var(--card2); }
+.unit-view-title { font-size:1.3rem; font-weight:900; }
+.unit-view-sub { font-size:0.9rem; color:var(--text2); margin-top:2px; }
+
+/* ===== EXERCISE CARD ===== */
+.exercise-card {
+  background:var(--card); border:1px solid var(--border); border-radius:20px;
+  padding:28px; margin-bottom:20px; animation:slideUp 0.3s ease;
+}
+.ex-type-badge {
+  display:inline-flex; align-items:center; gap:6px; font-size:0.78rem; font-weight:800;
+  text-transform:uppercase; letter-spacing:0.8px; padding:4px 12px; border-radius:20px;
+  margin-bottom:16px;
+}
+.ex-type-badge.pronunciation { background:rgba(108,99,255,0.2); color:var(--accent); }
+.ex-type-badge.multiple { background:rgba(247,151,30,0.2); color:var(--accent4); }
+.ex-type-badge.fill { background:rgba(255,101,132,0.2); color:var(--accent2); }
+.ex-type-badge.listen { background:rgba(67,233,123,0.2); color:var(--accent3); }
+.ex-type-badge.game { background:rgba(255,200,50,0.2); color:#ffd700; }
+
+.ex-instruction { font-size:0.9rem; color:var(--text2); margin-bottom:8px; font-style:italic; }
+.ex-question { font-size:1.15rem; font-weight:700; margin-bottom:20px; line-height:1.5; }
+.ex-question .en { color:var(--accent); }
+
+/* Multiple choice */
+.choices-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.choice-btn {
+  background:var(--bg3); border:2px solid var(--border); border-radius:var(--radius-sm);
+  color:var(--text); padding:12px 16px; cursor:pointer; font-family:'Nunito',sans-serif;
+  font-size:0.95rem; font-weight:600; text-align:left; transition:all 0.15s;
+}
+.choice-btn:hover:not(:disabled) { background:var(--card2); border-color:var(--accent); }
+.choice-btn.correct { background:rgba(67,233,123,0.15); border-color:var(--accent3); color:var(--accent3); }
+.choice-btn.wrong { background:rgba(255,101,132,0.15); border-color:var(--accent2); color:var(--accent2); }
+.choice-btn:disabled { cursor:default; }
+
+/* Fill in blank */
+.fill-wrap { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.fill-input {
+  padding:10px 14px; background:var(--bg2); border:2px solid var(--border);
+  border-radius:var(--radius-sm); color:var(--text); font-family:'Nunito',sans-serif;
+  font-size:1rem; font-weight:700; outline:none; min-width:140px; text-align:center;
+  transition:border 0.2s;
+}
+.fill-input:focus { border-color:var(--accent); }
+.fill-input.correct { border-color:var(--accent3); background:rgba(67,233,123,0.1); color:var(--accent3); }
+.fill-input.wrong { border-color:var(--accent2); background:rgba(255,101,132,0.1); }
+.btn-check {
+  padding:10px 22px; background:var(--accent); border:none; border-radius:var(--radius-sm);
+  color:#fff; font-family:'Nunito',sans-serif; font-weight:800; cursor:pointer; transition:all 0.15s;
+}
+.btn-check:hover { background:#8b5cf6; transform:translateY(-1px); }
+
+/* Pronunciation */
+.pronun-word {
+  font-family:'Space Mono',monospace; font-size:2.2rem; font-weight:700;
+  color:var(--accent); text-align:center; margin:10px 0 6px;
+}
+.pronun-phonetic { text-align:center; color:var(--text2); font-size:0.9rem; margin-bottom:20px; font-family:'Space Mono',monospace; }
+.pronun-controls { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:12px; }
+.btn-listen {
+  display:flex; align-items:center; gap:8px; padding:10px 22px;
+  background:rgba(67,233,123,0.15); border:2px solid var(--accent3);
+  border-radius:var(--radius-sm); color:var(--accent3); font-family:'Nunito',sans-serif;
+  font-weight:700; cursor:pointer; transition:all 0.15s; font-size:0.9rem;
+}
+.btn-listen:hover { background:rgba(67,233,123,0.25); }
+.btn-mic {
+  display:flex; align-items:center; gap:8px; padding:10px 22px;
+  background:rgba(108,99,255,0.15); border:2px solid var(--accent);
+  border-radius:var(--radius-sm); color:var(--accent); font-family:'Nunito',sans-serif;
+  font-weight:700; cursor:pointer; transition:all 0.15s; font-size:0.9rem;
+}
+.btn-mic:hover { background:rgba(108,99,255,0.25); }
+.btn-mic.recording { background:rgba(255,101,132,0.2); border-color:var(--accent2); color:var(--accent2); animation:micPulse 0.8s ease infinite; }
+@keyframes micPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+.pronun-result { text-align:center; font-size:0.9rem; min-height:24px; padding:6px; border-radius:8px; }
+.pronun-result.success { color:var(--accent3); background:rgba(67,233,123,0.1); }
+.pronun-result.error { color:var(--accent2); background:rgba(255,101,132,0.1); }
+.pronun-attempts { text-align:center; font-size:0.8rem; color:var(--text2); margin-top:6px; }
+
+/* Listening */
+.listen-audio-btn {
+  width:100%; padding:16px; background:var(--bg3);
+  border:2px dashed var(--border); border-radius:var(--radius-sm);
+  color:var(--text); font-family:'Nunito',sans-serif; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  gap:10px; margin-bottom:16px; transition:all 0.2s; font-size:1rem;
+}
+.listen-audio-btn:hover { border-color:var(--accent3); color:var(--accent3); background:rgba(67,233,123,0.05); }
+.listen-audio-btn.played { border-style:solid; border-color:var(--accent3); }
+
+/* Feedback */
+.feedback-box {
+  padding:12px 16px; border-radius:var(--radius-sm); margin-top:12px;
+  font-weight:700; font-size:0.92rem; display:none; align-items:center; gap:8px;
+}
+.feedback-box.show { display:flex; }
+.feedback-box.correct-fb { background:rgba(67,233,123,0.15); color:var(--accent3); border:1px solid rgba(67,233,123,0.3); }
+.feedback-box.wrong-fb { background:rgba(255,101,132,0.15); color:var(--accent2); border:1px solid rgba(255,101,132,0.3); }
+.xp-earned { font-size:0.8rem; color:var(--accent4); font-weight:800; margin-left:auto; }
+
+/* Navigation buttons */
+.ex-nav { display:flex; justify-content:space-between; align-items:center; margin-top:20px; }
+.btn-next {
+  padding:11px 28px; background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  border:none; border-radius:var(--radius-sm); color:#fff; font-family:'Nunito',sans-serif;
+  font-weight:800; cursor:pointer; font-size:0.95rem; transition:all 0.15s;
+}
+.btn-next:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(108,99,255,0.4); }
+
+/* Ex counter */
+.ex-counter { font-size:0.85rem; color:var(--text2); font-weight:600; }
+.ex-progress { display:flex; gap:4px; margin-bottom:20px; }
+.ex-dot { height:6px; flex:1; background:var(--bg3); border-radius:3px; transition:background 0.3s; }
+.ex-dot.done { background:var(--accent3); }
+.ex-dot.active { background:var(--accent); }
+
+/* ===== GAME: Word Match ===== */
+.game-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.game-col { display:flex; flex-direction:column; gap:8px; }
+.game-col-title { font-size:0.8rem; color:var(--text2); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; text-align:center; margin-bottom:4px; }
+.game-item {
+  padding:12px 16px; background:var(--bg3); border:2px solid var(--border);
+  border-radius:var(--radius-sm); cursor:pointer; font-weight:700; text-align:center;
+  transition:all 0.15s; user-select:none;
+}
+.game-item:hover:not(.matched):not(.selected) { border-color:var(--accent); background:var(--card2); }
+.game-item.selected { border-color:var(--accent); background:rgba(108,99,255,0.2); color:var(--accent); }
+.game-item.matched { border-color:var(--accent3); background:rgba(67,233,123,0.1); color:var(--accent3); cursor:default; }
+.game-item.wrong-flash { border-color:var(--accent2); background:rgba(255,101,132,0.1); animation:wrongFlash 0.4s ease; }
+@keyframes wrongFlash { 0%,100%{transform:scale(1)} 50%{transform:scale(0.95)} }
+.game-score { text-align:center; font-size:1rem; font-weight:700; color:var(--text2); margin-top:12px; }
+
+/* ===== UNIT COMPLETE ===== */
+.unit-complete {
+  text-align:center; padding:40px 20px; display:none;
+}
+.complete-emoji { font-size:5rem; margin-bottom:16px; animation:bounce 0.6s ease; }
+@keyframes bounce { 0%{transform:scale(0)} 60%{transform:scale(1.1)} 100%{transform:scale(1)} }
+.complete-title { font-size:2rem; font-weight:900; margin-bottom:8px; }
+.complete-xp { font-size:1.3rem; color:var(--accent4); font-weight:800; margin-bottom:24px; }
+.complete-stats { display:flex; justify-content:center; gap:24px; margin-bottom:28px; }
+.stat-item { text-align:center; }
+.stat-val { font-size:2rem; font-weight:900; }
+.stat-label { font-size:0.82rem; color:var(--text2); }
+.stars { font-size:2rem; margin-bottom:12px; }
+
+/* ===== TOAST ===== */
+#toast {
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(80px);
+  background:var(--card2); border:1px solid var(--border); border-radius:12px;
+  padding:12px 24px; font-weight:700; font-size:0.95rem;
+  transition:transform 0.3s ease; z-index:200; pointer-events:none;
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+#toast.show { transform:translateX(-50%) translateY(0); }
+
+/* ===== CONFETTI ===== */
+.confetti-piece {
+  position:fixed; width:10px; height:10px; pointer-events:none; z-index:300;
+  animation:confettiFall 2s ease-in forwards;
+}
+@keyframes confettiFall {
+  0%{transform:translateY(-20px) rotate(0deg); opacity:1}
+  100%{transform:translateY(100vh) rotate(720deg); opacity:0}
+}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:600px) {
+  .choices-grid { grid-template-columns:1fr; }
+  .game-grid { grid-template-columns:1fr; }
+  .pronun-word { font-size:1.7rem; }
+  .welcome-banner { flex-direction:column; text-align:center; }
+  header { padding:0 16px; }
+  .header-title { font-size:0.95rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- STARS -->
+<canvas id="stars-canvas"></canvas>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-logo">🔬</div>
+  <div style="font-size:1.2rem;font-weight:800;color:var(--text)">EnglishLab II</div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+  <div style="font-size:0.85rem;color:var(--text2)">Cargando laboratorio...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen" style="display:flex">
+  <div class="login-box">
+    <div class="login-logo">🧪</div>
+    <h1>EnglishLab II</h1>
+    <p>Laboratorio Virtual de Inglés — CBTis 179<br><span style="color:var(--text2)">Ingresa tu número de control</span></p>
+    <input type="text" id="control-input" placeholder="Ej. 24CBT0001" maxlength="12" autocomplete="off" />
+    <button class="btn-primary" onclick="doLogin()">Entrar al Lab 🚀</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">✨ +10 XP</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-left">
+      <div class="header-logo">🧪</div>
+      <div>
+        <div class="header-title"><span>English</span>Lab II</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="xp-badge">
+        <span class="xp-icon">⚡</span>
+        <span class="xp-val" id="header-xp">0</span>
+        <span style="font-size:0.8rem;color:var(--text2)">XP</span>
+      </div>
+      <div class="user-avatar" id="user-avatar-btn">?</div>
+    </div>
+  </header>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <div class="welcome-banner">
+      <div class="welcome-emoji">👋</div>
+      <div class="welcome-text">
+        <h2>¡Bienvenid@ al laboratorio, <span id="welcome-name">estudiante</span>!</h2>
+        <p>Aquí practicarás inglés del nivel A1+ — <em>These are a few of my favorite things</em>.<br>Completa los 8 módulos para dominar el semestre.</p>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <h3>Progreso del semestre</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:0.85rem;color:var(--text2)" id="progress-label">0 de 8 módulos completados</span>
+        <span style="font-size:0.85rem;font-weight:800;color:var(--accent)" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="main-progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1rem;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px;">Módulos de práctica</h3>
+    <div class="units-grid" id="units-grid"></div>
+  </div>
+
+  <!-- UNIT VIEW -->
+  <div id="unit-view">
+    <div class="unit-view-header">
+      <button class="btn-back" onclick="backToDashboard()">← Volver</button>
+      <div>
+        <div class="unit-view-title" id="uv-title"></div>
+        <div class="unit-view-sub" id="uv-sub"></div>
+      </div>
+    </div>
+    <div class="ex-progress" id="ex-progress-dots"></div>
+    <div id="exercise-container"></div>
+    <div class="unit-complete" id="unit-complete">
+      <div class="complete-emoji">🎉</div>
+      <div class="stars" id="complete-stars">⭐⭐⭐</div>
+      <div class="complete-title">¡Módulo completado!</div>
+      <div class="complete-xp" id="complete-xp">+50 XP ganados</div>
+      <div class="complete-stats">
+        <div class="stat-item"><div class="stat-val" id="c-correct">0</div><div class="stat-label">Correctas</div></div>
+        <div class="stat-item"><div class="stat-val" id="c-total">0</div><div class="stat-label">Total</div></div>
+        <div class="stat-item"><div class="stat-val" id="c-acc">0%</div><div class="stat-label">Precisión</div></div>
+      </div>
+      <button class="btn-primary" style="max-width:280px;margin:0 auto" onclick="backToDashboard()">Seguir practicando 🚀</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  CONFIGURACIÓN SUPABASE
+// ============================================================
+// 🔧 Modo demo — sin Supabase. El progreso se guarda en localStorage.
+
+// ============================================================
+//  ESTADO GLOBAL
+// ============================================================
+let currentUser = null;
+let userProgress = {};   // { unitId: { completed, xp, correct, total } }
+let currentUnit = null;
+let currentExerciseIdx = 0;
+let sessionCorrect = 0;
+let sessionTotal = 0;
+let recognition = null;
+
+// ============================================================
+//  DATOS: 8 MÓDULOS → Inglés II (A1+) MCCEMS 2025
+// ============================================================
+const UNITS = [
+  {
+    id: 1,
+    icon: '📅',
+    title: 'Daily Routines',
+    titleEs: 'Rutinas diarias',
+    desc: 'Describe actividades cotidianas en presente simple',
+    propósito: 'Propósito 1: Rutinas diarias y actividades cotidianas',
+    xpReward: 50,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'always',
+        phonetic: '/ˈɔːlweɪz/',
+        meaning: 'siempre',
+        sentence: 'I always wake up at 6 AM.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la opción correcta',
+        question: 'She ___ to school every day.',
+        choices: ['goes', 'go', 'going', 'went'],
+        answer: 0,
+        explanation: 'Con "she/he/it" el verbo toma -s en presente simple.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa la oración con la forma correcta',
+        sentence_parts: ['He ', ' breakfast at 7 AM every morning.'],
+        answer: 'has',
+        hint: 'have → has (3ª persona)'
+      },
+      {
+        type: 'pronunciation',
+        word: 'usually',
+        phonetic: '/ˈjuːʒuəli/',
+        meaning: 'usualmente',
+        sentence: 'I usually eat lunch at noon.'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une cada adverbio con su significado en español',
+        pairs: [
+          { en: 'always', es: 'siempre' },
+          { en: 'usually', es: 'usualmente' },
+          { en: 'sometimes', es: 'a veces' },
+          { en: 'never', es: 'nunca' }
+        ]
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha la oración y elige lo que se dice',
+        utterance: 'She usually goes to school by bus.',
+        choices: ['She usually goes to school by bus.', 'She always walks to school.', 'She never takes the bus.', 'She sometimes rides a bike.'],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 2,
+    icon: '🎸',
+    title: 'Hobbies & Free Time',
+    titleEs: 'Pasatiempos y tiempo libre',
+    desc: 'Habla sobre actividades de ocio con do/does',
+    propósito: 'Propósito 2: Actividades en tiempo libre',
+    xpReward: 55,
+    exercises: [
+      {
+        type: 'multiple',
+        instruction: 'Forma la pregunta correcta',
+        question: '___ she play the guitar on weekends?',
+        choices: ['Do', 'Does', 'Is', 'Are'],
+        answer: 1,
+        explanation: 'Con "she/he/it" usamos "Does" para preguntas en presente simple.'
+      },
+      {
+        type: 'pronunciation',
+        word: 'hobby',
+        phonetic: '/ˈhɒbi/',
+        meaning: 'pasatiempo',
+        sentence: 'My hobby is painting.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa la pregunta',
+        sentence_parts: ['___ you like playing video games?'],
+        answer: 'Do',
+        hint: 'Pregunta con "you" → Do'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une los pasatiempos con su traducción',
+        pairs: [
+          { en: 'reading', es: 'leer' },
+          { en: 'swimming', es: 'nadar' },
+          { en: 'cooking', es: 'cocinar' },
+          { en: 'painting', es: 'pintar' }
+        ]
+      },
+      {
+        type: 'pronunciation',
+        word: 'weekend',
+        phonetic: '/ˈwiːkɛnd/',
+        meaning: 'fin de semana',
+        sentence: 'What do you do on weekends?'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Selecciona la respuesta negativa correcta',
+        question: 'He ___ play football. He prefers basketball.',
+        choices: ["don't", "doesn't", "isn't", "aren't"],
+        answer: 1,
+        explanation: '"Doesn\'t" se usa con he/she/it en la negativa.'
+      }
+    ]
+  },
+  {
+    id: 3,
+    icon: '💪',
+    title: 'Can You Do It?',
+    titleEs: 'Habilidades y permiso',
+    desc: 'Expresa lo que puedes o no puedes hacer',
+    propósito: 'Propósito 3: Habilidades con can/can\'t',
+    xpReward: 55,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'can',
+        phonetic: '/kæn/',
+        meaning: 'poder / saber',
+        sentence: 'I can speak English a little.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la opción correcta',
+        question: 'She ___ swim very fast. She\'s a champion!',
+        choices: ["can't", 'can', 'could', 'should'],
+        answer: 1,
+        explanation: '"Can" expresa habilidad en el presente.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa con can o can\'t',
+        sentence_parts: ['He ', ' play the piano — he never learned.'],
+        answer: "can't",
+        hint: 'Negativa de can'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une cada habilidad con su traducción',
+        pairs: [
+          { en: 'swim', es: 'nadar' },
+          { en: 'drive', es: 'manejar' },
+          { en: 'cook', es: 'cocinar' },
+          { en: 'sing', es: 'cantar' }
+        ]
+      },
+      {
+        type: 'pronunciation',
+        word: "can't",
+        phonetic: '/kɑːnt/',
+        meaning: 'no puedo',
+        sentence: "I can't play the guitar."
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y elige la oración que oyes',
+        utterance: 'Can you help me with this exercise?',
+        choices: ['Can you help me with this exercise?', "I can't help you now.", 'She can speak three languages.', 'Can he ride a bike?'],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 4,
+    icon: '👗',
+    title: 'Looks & Weather',
+    titleEs: 'Descripción y clima',
+    desc: 'Describe personas, ropa y condiciones del clima',
+    propósito: 'Propósito 4: Personas, vestimenta y clima',
+    xpReward: 60,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'wearing',
+        phonetic: '/ˈwɛərɪŋ/',
+        meaning: 'usando / llevando puesto',
+        sentence: 'She is wearing a blue dress.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Describe la situación',
+        question: 'Look at the sky — it ___ raining outside.',
+        choices: ['am', 'is', 'are', 'be'],
+        answer: 1,
+        explanation: '"It is raining" — presente continuo para descripciones del momento.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa la descripción',
+        sentence_parts: ['He has ', ' hair and blue eyes.'],
+        answer: 'brown',
+        hint: 'Un color de cabello común'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une la prenda con su nombre en inglés',
+        pairs: [
+          { en: 'jacket', es: 'chamarra' },
+          { en: 'boots', es: 'botas' },
+          { en: 'scarf', es: 'bufanda' },
+          { en: 'gloves', es: 'guantes' }
+        ]
+      },
+      {
+        type: 'pronunciation',
+        word: 'cloudy',
+        phonetic: '/ˈklaʊdi/',
+        meaning: 'nublado',
+        sentence: "It's cloudy today. Bring an umbrella!"
+      },
+      {
+        type: 'multiple',
+        instruction: 'Selecciona la descripción física correcta',
+        question: 'Maria ___ long curly hair.',
+        choices: ['have', 'has', 'is', 'are'],
+        answer: 1,
+        explanation: '"Has" para posesión con she/he/it.'
+      }
+    ]
+  },
+  {
+    id: 5,
+    icon: '⚖️',
+    title: 'Bigger & Better',
+    titleEs: 'Comparaciones',
+    desc: 'Compara personas, lugares y objetos',
+    propósito: 'Propósito 5: Comparativos y superlativos',
+    xpReward: 65,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'bigger',
+        phonetic: '/ˈbɪɡər/',
+        meaning: 'más grande',
+        sentence: 'An elephant is bigger than a dog.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Selecciona el comparativo correcto',
+        question: 'English is ___ than I thought.',
+        choices: ['more easy', 'easyer', 'easier', 'most easy'],
+        answer: 2,
+        explanation: 'Adjetivos de 2 sílabas terminados en -y → cambia y por i y agrega -er.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa el comparativo',
+        sentence_parts: ['The blue dress is ', ' than the red one.'],
+        answer: 'more expensive',
+        hint: 'expensive → more + adjective'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une el adjetivo con su comparativo',
+        pairs: [
+          { en: 'tall', es: 'taller' },
+          { en: 'fast', es: 'faster' },
+          { en: 'good', es: 'better' },
+          { en: 'bad', es: 'worse' }
+        ]
+      },
+      {
+        type: 'pronunciation',
+        word: 'better',
+        phonetic: '/ˈbɛtər/',
+        meaning: 'mejor',
+        sentence: 'This phone is better than that one.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige el superlativo',
+        question: 'It\'s ___ city in the country.',
+        choices: ['the most big', 'the bigger', 'the biggest', 'most biggest'],
+        answer: 2,
+        explanation: 'Monosílabos: the + adjective + -est.'
+      }
+    ]
+  },
+  {
+    id: 6,
+    icon: '🗺️',
+    title: 'Getting Around',
+    titleEs: 'Cómo llegar a lugares',
+    desc: 'Pregunta y da indicaciones para llegar a un lugar',
+    propósito: 'Propósito 6: Indicaciones y ubicación',
+    xpReward: 60,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'straight',
+        phonetic: '/streɪt/',
+        meaning: 'recto / directo',
+        sentence: 'Go straight and turn left.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la indicación correcta',
+        question: 'Turn ___ at the traffic light.',
+        choices: ['straight', 'left', 'cross', 'under'],
+        answer: 1,
+        explanation: '"Turn left/right" = gira a la izquierda/derecha.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa la indicación',
+        sentence_parts: ['The school is ', ' to the hospital.'],
+        answer: 'next',
+        hint: 'next to = junto a'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une las indicaciones con su traducción',
+        pairs: [
+          { en: 'turn right', es: 'gira a la derecha' },
+          { en: 'go straight', es: 'sigue recto' },
+          { en: 'next to', es: 'junto a' },
+          { en: 'across from', es: 'frente a' }
+        ]
+      },
+      {
+        type: 'pronunciation',
+        word: 'corner',
+        phonetic: '/ˈkɔːrnər/',
+        meaning: 'esquina',
+        sentence: 'Turn left at the corner.'
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y elige la indicación correcta',
+        utterance: 'Go straight and then turn right at the corner.',
+        choices: ['Go straight and then turn right at the corner.', 'Turn left and go across the street.', 'The pharmacy is next to the school.', 'Walk past the park and turn left.'],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 7,
+    icon: '🍕',
+    title: 'I\'d Like That!',
+    titleEs: 'Deseos y necesidades',
+    desc: 'Expresa deseos con would like, pide y elige',
+    propósito: 'Propósito 7: Would like, cantidades, alimentos',
+    xpReward: 60,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: "I'd like",
+        phonetic: '/aɪd laɪk/',
+        meaning: 'me gustaría / quisiera',
+        sentence: "I'd like a coffee, please."
+      },
+      {
+        type: 'multiple',
+        instruction: 'Selecciona la forma correcta de pedir',
+        question: '___ like some water, please?',
+        choices: ['Would you', 'Do you', 'Are you', 'Have you'],
+        answer: 0,
+        explanation: '"Would you like...?" es la forma de ofrecer cortésmente.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa la oración',
+        sentence_parts: ["I'd like ", ' apples, please.'],
+        answer: 'some',
+        hint: 'some = algo de / unos cuantos'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une los alimentos con su traducción',
+        pairs: [
+          { en: 'apple', es: 'manzana' },
+          { en: 'bread', es: 'pan' },
+          { en: 'water', es: 'agua' },
+          { en: 'chicken', es: 'pollo' }
+        ]
+      },
+      {
+        type: 'pronunciation',
+        word: 'menu',
+        phonetic: '/ˈmɛnjuː/',
+        meaning: 'menú',
+        sentence: 'Could I see the menu, please?'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la pregunta correcta para cantidades',
+        question: '___ milk do you need?',
+        choices: ['How many', 'How much', 'How often', 'How long'],
+        answer: 1,
+        explanation: '"How much" con incontables (milk, water, sugar...).'
+      }
+    ]
+  },
+  {
+    id: 8,
+    icon: '🔄',
+    title: 'Review & Shine',
+    titleEs: 'Repaso integrador',
+    desc: 'Consolida todo lo aprendido en los módulos anteriores',
+    propósito: 'Propósito 8: Consolidación de aprendizajes',
+    xpReward: 80,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'excellent',
+        phonetic: '/ˈɛksələnt/',
+        meaning: 'excelente',
+        sentence: 'Your English is excellent!'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Combina conocimientos — elige la respuesta correcta',
+        question: 'Maria ___ usually ___ to school by bus.',
+        choices: ['does / go', 'is / going', 'does / goes', '— / goes'],
+        answer: 3,
+        explanation: 'Con "usually" y Maria (3ª persona): goes. No se usa do/does en afirmativas.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa con la forma correcta',
+        sentence_parts: ['She is ', ' a red shirt today.'],
+        answer: 'wearing',
+        hint: 'Presente continuo: to be + verb-ing'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Repaso: une las expresiones con su significado',
+        pairs: [
+          { en: "I'd like", es: 'quisiera' },
+          { en: "can't", es: 'no puedo' },
+          { en: 'bigger', es: 'más grande' },
+          { en: 'turn right', es: 'gira a la derecha' }
+        ]
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y selecciona',
+        utterance: "I'd like two apples and some bread, please.",
+        choices: ["I'd like two apples and some bread, please.", "I usually eat fruit for breakfast.", "She can't find the bakery.", "Would you like some coffee?"],
+        answer: 0
+      },
+      {
+        type: 'pronunciation',
+        word: 'practice',
+        phonetic: '/ˈpræktɪs/',
+        meaning: 'práctica',
+        sentence: 'Practice makes perfect!'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Repaso final: elige la comparación correcta',
+        question: 'This book is ___ interesting ___ that one.',
+        choices: ['more / than', 'most / than', 'more / that', 'much / than'],
+        answer: 0,
+        explanation: 'Comparativo de adjetivos largos: more + adj + than.'
+      }
+    ]
+  }
+];
+
+// ============================================================
+//  STARS CANVAS
+// ============================================================
+function initStars() {
+  const c = document.getElementById('stars-canvas');
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  const ctx = c.getContext('2d');
+  const stars = Array.from({length:100},()=>({
+    x:Math.random()*c.width, y:Math.random()*c.height,
+    r:Math.random()*1.5+0.3, a:Math.random()
+  }));
+  function draw() {
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.a += 0.003 + Math.random()*0.002;
+      ctx.globalAlpha = (Math.sin(s.a)+1)/2 * 0.7 + 0.1;
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ============================================================
+//  AUTH
+// ============================================================
+async function doLogin() {
+  const input = document.getElementById('control-input').value.trim().toUpperCase();
+  const err = document.getElementById('login-error');
+  if (input.length < 6) { err.textContent = 'Número de control muy corto.'; return; }
+
+  err.textContent = '';
+  // Modo local: guardar/recuperar de localStorage
+  const key = 'englishlab_' + input;
+  let stored = localStorage.getItem(key);
+  let data;
+  if (stored) {
+    data = JSON.parse(stored);
+  } else {
+    data = { control_number: input, xp: 0, progress: {} };
+    localStorage.setItem(key, JSON.stringify(data));
+  }
+  currentUser = data;
+  userProgress = data.progress || {};
+  document.getElementById('login-screen').style.display = 'none';
+  initApp();
+}
+
+// También entrar con Enter
+document.getElementById('control-input').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+// ============================================================
+//  INIT APP
+// ============================================================
+function initApp() {
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('header-xp').textContent = currentUser.xp || 0;
+  const initials = currentUser.control_number.substring(0,2).toUpperCase();
+  document.getElementById('user-avatar-btn').textContent = initials;
+  document.getElementById('welcome-name').textContent = currentUser.control_number;
+  renderDashboard();
+}
+
+// ============================================================
+//  DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const grid = document.getElementById('units-grid');
+  grid.innerHTML = '';
+  let completed = 0;
+  UNITS.forEach((unit, i) => {
+    const prog = userProgress[unit.id] || {};
+    const isDone = prog.completed;
+    if (isDone) completed++;
+    const isLocked = i > 0 && !(userProgress[UNITS[i-1].id] || {}).completed;
+
+    const card = document.createElement('div');
+    card.className = `unit-card${isDone?' completed':''}${isLocked?' locked':''}`;
+    card.onclick = () => openUnit(unit.id);
+    card.innerHTML = `
+      <div class="unit-header">
+        <div class="unit-icon">${unit.icon}</div>
+        <div class="unit-badge ${isDone?'done':'new'}">${isDone?'✓ Hecho':isLocked?'🔒 Bloqueado':'▶ Nuevo'}</div>
+      </div>
+      <div class="unit-num">Módulo ${unit.id}</div>
+      <div class="unit-title">${unit.title}</div>
+      <div class="unit-desc">${unit.desc}</div>
+      <div class="unit-meta">
+        <span style="font-size:0.8rem;color:var(--text2)">${unit.exercises.length} ejercicios</span>
+        <span class="unit-xp">⚡ ${unit.xpReward} XP</span>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  const pct = Math.round((completed / UNITS.length) * 100);
+  document.getElementById('main-progress-bar').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-label').textContent = `${completed} de ${UNITS.length} módulos completados`;
+}
+
+// ============================================================
+//  OPEN UNIT
+// ============================================================
+function openUnit(unitId) {
+  currentUnit = UNITS.find(u => u.id === unitId);
+  currentExerciseIdx = 0;
+  sessionCorrect = 0;
+  sessionTotal = 0;
+
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('unit-view').style.display = 'block';
+  document.getElementById('unit-complete').style.display = 'none';
+  document.getElementById('exercise-container').style.display = 'block';
+
+  document.getElementById('uv-title').textContent = `${currentUnit.icon} ${currentUnit.title}`;
+  document.getElementById('uv-sub').textContent = currentUnit.titleEs + ' — ' + currentUnit.propósito;
+
+  buildProgressDots();
+  renderExercise();
+}
+
+function backToDashboard() {
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('unit-view').style.display = 'none';
+  renderDashboard();
+  stopRecognition();
+}
+
+// ============================================================
+//  PROGRESS DOTS
+// ============================================================
+function buildProgressDots() {
+  const container = document.getElementById('ex-progress-dots');
+  container.innerHTML = '';
+  currentUnit.exercises.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'ex-dot' + (i === 0 ? ' active' : '');
+    dot.id = `dot-${i}`;
+    container.appendChild(dot);
+  });
+}
+
+function updateDots(idx) {
+  currentUnit.exercises.forEach((_, i) => {
+    const d = document.getElementById(`dot-${i}`);
+    if (!d) return;
+    d.className = 'ex-dot' + (i < idx ? ' done' : i === idx ? ' active' : '');
+  });
+}
+
+// ============================================================
+//  RENDER EXERCISE
+// ============================================================
+function renderExercise() {
+  if (currentExerciseIdx >= currentUnit.exercises.length) {
+    showUnitComplete();
+    return;
+  }
+  updateDots(currentExerciseIdx);
+  const ex = currentUnit.exercises[currentExerciseIdx];
+  const container = document.getElementById('exercise-container');
+  container.innerHTML = '';
+
+  const card = document.createElement('div');
+  card.className = 'exercise-card';
+
+  if (ex.type === 'multiple')   card.innerHTML = buildMultiple(ex);
+  else if (ex.type === 'fill')  card.innerHTML = buildFill(ex);
+  else if (ex.type === 'pronunciation') card.innerHTML = buildPronunciation(ex);
+  else if (ex.type === 'listen') card.innerHTML = buildListen(ex);
+  else if (ex.type === 'game')  card.innerHTML = buildGame(ex);
+
+  container.appendChild(card);
+
+  // Attach listeners
+  if (ex.type === 'multiple') attachMultiple(ex);
+  else if (ex.type === 'fill') attachFill(ex);
+  else if (ex.type === 'pronunciation') attachPronunciation(ex);
+  else if (ex.type === 'listen') attachListen(ex);
+  else if (ex.type === 'game') attachGame(ex);
+}
+
+// ============================================================
+//  MULTIPLE CHOICE
+// ============================================================
+function buildMultiple(ex) {
+  return `
+    <div class="ex-type-badge multiple">🎯 Selección múltiple</div>
+    <div class="ex-instruction">${ex.instruction}</div>
+    <div class="ex-question">${escHtml(ex.question)}</div>
+    <div class="choices-grid" id="choices-grid">
+      ${ex.choices.map((c,i) => `<button class="choice-btn" data-idx="${i}">${escHtml(c)}</button>`).join('')}
+    </div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="ex-nav">
+      <span class="ex-counter">Ejercicio ${currentExerciseIdx+1} de ${currentUnit.exercises.length}</span>
+      <button class="btn-next" id="btn-next" style="display:none" onclick="nextExercise()">Siguiente →</button>
+    </div>
+  `;
+}
+
+function attachMultiple(ex) {
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+      sessionTotal++;
+      if (idx === ex.answer) {
+        btn.classList.add('correct');
+        sessionCorrect++;
+        showFeedback(true, '¡Correcto! ' + (ex.explanation||''));
+        earnXP(10);
+      } else {
+        btn.classList.add('wrong');
+        document.querySelectorAll('.choice-btn')[ex.answer].classList.add('correct');
+        showFeedback(false, '¡Casi! ' + (ex.explanation||''));
+      }
+      document.getElementById('btn-next').style.display = 'block';
+    });
+  });
+}
+
+// ============================================================
+//  FILL IN BLANK
+// ============================================================
+function buildFill(ex) {
+  const parts = ex.sentence_parts;
+  const hasBlank = parts.length > 1;
+  const sentence = hasBlank
+    ? `${escHtml(parts[0])}<input class="fill-input" id="fill-ans" placeholder="..." />${escHtml(parts[1]||'')}`
+    : `<input class="fill-input" id="fill-ans" placeholder="..." /> ${escHtml(parts[0]||'')}`;
+  return `
+    <div class="ex-type-badge fill">✏️ Completa la oración</div>
+    <div class="ex-instruction">${ex.instruction}</div>
+    <div class="ex-question fill-wrap">${sentence}</div>
+    <div style="color:var(--text2);font-size:0.82rem;margin-bottom:12px">💡 Pista: ${ex.hint}</div>
+    <button class="btn-check" onclick="checkFill('${ex.answer.replace(/'/g,"\\'")}')">Verificar ✓</button>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="ex-nav">
+      <span class="ex-counter">Ejercicio ${currentExerciseIdx+1} de ${currentUnit.exercises.length}</span>
+      <button class="btn-next" id="btn-next" style="display:none" onclick="nextExercise()">Siguiente →</button>
+    </div>
+  `;
+}
+
+function attachFill() {
+  const inp = document.getElementById('fill-ans');
+  if (inp) inp.addEventListener('keydown', e => { if(e.key==='Enter') { const a = inp.value.trim(); checkFill(a); } });
+}
+
+function checkFill(answer) {
+  const inp = document.getElementById('fill-ans');
+  if (!inp) return;
+  const val = inp.value.trim().toLowerCase();
+  inp.disabled = true;
+  sessionTotal++;
+  const correct = val === answer.toLowerCase() || val === answer.replace(/'/g,'').toLowerCase();
+  if (correct) {
+    inp.classList.add('correct');
+    sessionCorrect++;
+    showFeedback(true, '¡Excelente! Eso es correcto.');
+    earnXP(10);
+  } else {
+    inp.classList.add('wrong');
+    showFeedback(false, `La respuesta correcta es: "${answer}"`);
+  }
+  document.getElementById('btn-next').style.display = 'block';
+}
+
+// ============================================================
+//  PRONUNCIATION
+// ============================================================
+function buildPronunciation(ex) {
+  return `
+    <div class="ex-type-badge pronunciation">🎤 Pronunciación</div>
+    <div class="ex-instruction">Escucha la palabra, luego repítela con el micrófono</div>
+    <div class="pronun-word">${escHtml(ex.word)}</div>
+    <div class="pronun-phonetic">${escHtml(ex.phonetic)} — "${escHtml(ex.meaning)}"</div>
+    <div style="font-size:0.88rem;color:var(--text2);text-align:center;margin-bottom:14px;font-style:italic">"${escHtml(ex.sentence)}"</div>
+    <div class="pronun-controls">
+      <button class="btn-listen" onclick="speakWord('${ex.word.replace(/'/g,"\\'")}')">🔊 Escuchar</button>
+      <button class="btn-mic" id="btn-mic" onclick="startRecognition('${ex.word.replace(/'/g,"\\'")}')">🎤 Hablar</button>
+    </div>
+    <div class="pronun-result" id="pronun-result"></div>
+    <div class="pronun-attempts" id="pronun-attempts">Intentos: 0 / 3</div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="ex-nav">
+      <span class="ex-counter">Ejercicio ${currentExerciseIdx+1} de ${currentUnit.exercises.length}</span>
+      <button class="btn-next" id="btn-next" style="display:none" onclick="nextExercise()">Siguiente →</button>
+    </div>
+  `;
+}
+
+function attachPronunciation(ex) {
+  // Auto-speak on load
+  setTimeout(() => speakWord(ex.word), 400);
+}
+
+let pronunAttempts = 0;
+let pronunPassed = false;
+
+function speakWord(word) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(word);
+  utt.lang = 'en-US'; utt.rate = 0.85;
+  speechSynthesis.speak(utt);
+}
+
+function startRecognition(targetWord) {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('⚠️ Tu navegador no soporta micrófono. Usa Chrome.');
+    document.getElementById('btn-next').style.display = 'block';
+    return;
+  }
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  const btn = document.getElementById('btn-mic');
+  const result = document.getElementById('pronun-result');
+  const attEl = document.getElementById('pronun-attempts');
+  if (!btn || !result) return;
+
+  btn.classList.add('recording');
+  btn.textContent = '⏹ Grabando...';
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript.toLowerCase().trim();
+    const target = targetWord.toLowerCase().replace(/[^a-z\s']/g,'');
+    pronunAttempts++;
+    attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
+
+    const isMatch = checkPronunciationMatch(transcript, target);
+    if (isMatch) {
+      result.className = 'pronun-result success';
+      result.textContent = `✅ ¡Muy bien! Dijiste: "${transcript}"`;
+      if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
+      sessionTotal++;
+      showFeedback(true, '¡Pronunciación correcta!');
+      document.getElementById('btn-next').style.display = 'block';
+    } else {
+      result.className = 'pronun-result error';
+      result.textContent = `❌ Se detectó: "${transcript}" — ¡Intenta de nuevo!`;
+      sessionTotal++;
+      if (pronunAttempts >= 3) {
+        showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
+        document.getElementById('btn-next').style.display = 'block';
+      }
+    }
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 Hablar';
+  };
+
+  recognition.onerror = () => {
+    result.className = 'pronun-result error';
+    result.textContent = '⚠️ No se pudo escuchar. Intenta de nuevo.';
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 Hablar';
+  };
+
+  recognition.onend = () => {
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 Hablar';
+  };
+
+  pronunAttempts === 0 && (pronunAttempts = 0);
+  recognition.start();
+}
+
+function checkPronunciationMatch(said, target) {
+  said = said.toLowerCase().replace(/[^a-z\s']/g,'').trim();
+  target = target.toLowerCase().replace(/[^a-z\s']/g,'').trim();
+  if (said === target) return true;
+  if (said.includes(target) || target.includes(said)) return true;
+  // Levenshtein básico
+  return levenshtein(said, target) <= Math.ceil(target.length * 0.3);
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const d = Array.from({length:m+1}, (_,i) => Array.from({length:n+1}, (_,j) => i===0?j:j===0?i:0));
+  for (let i=1;i<=m;i++) for (let j=1;j<=n;j++)
+    d[i][j] = a[i-1]===b[j-1] ? d[i-1][j-1] : 1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);
+  return d[m][n];
+}
+
+function stopRecognition() {
+  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+}
+
+// ============================================================
+//  LISTENING
+// ============================================================
+function buildListen(ex) {
+  return `
+    <div class="ex-type-badge listen">👂 Escucha y elige</div>
+    <div class="ex-instruction">${ex.instruction}</div>
+    <button class="listen-audio-btn" id="listen-btn" onclick="playUtterance('${ex.utterance.replace(/'/g,"\\'")}', this)">
+      🔊 Reproducir audio
+    </button>
+    <div class="choices-grid" id="choices-grid">
+      ${ex.choices.map((c,i) => `<button class="choice-btn" data-idx="${i}">${escHtml(c)}</button>`).join('')}
+    </div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="ex-nav">
+      <span class="ex-counter">Ejercicio ${currentExerciseIdx+1} de ${currentUnit.exercises.length}</span>
+      <button class="btn-next" id="btn-next" style="display:none" onclick="nextExercise()">Siguiente →</button>
+    </div>
+  `;
+}
+
+function attachListen(ex) {
+  setTimeout(() => playUtterance(ex.utterance, document.getElementById('listen-btn')), 500);
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+      sessionTotal++;
+      if (idx === ex.answer) {
+        btn.classList.add('correct');
+        sessionCorrect++;
+        showFeedback(true, '¡Correcto! Buen oído 👂');
+        earnXP(12);
+      } else {
+        btn.classList.add('wrong');
+        document.querySelectorAll('.choice-btn')[ex.answer].classList.add('correct');
+        showFeedback(false, 'Escucha de nuevo la próxima vez.');
+      }
+      document.getElementById('btn-next').style.display = 'block';
+    });
+  });
+}
+
+function playUtterance(text, btn) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'en-US'; utt.rate = 0.8;
+  utt.onend = () => btn && btn.classList.add('played');
+  speechSynthesis.speak(utt);
+}
+
+// ============================================================
+//  GAME: Word Match
+// ============================================================
+let gameState = { selected: null, side: null, matched: 0 };
+
+function buildGame(ex) {
+  const shuffledEs = shuffle([...ex.pairs.map(p=>p.es)]);
+  const pairsJSON = JSON.stringify(ex.pairs).replace(/"/g,'&quot;');
+  return `
+    <div class="ex-type-badge game">🎮 Juego: Une los pares</div>
+    <div class="ex-instruction">${ex.instruction}</div>
+    <div class="game-grid">
+      <div class="game-col">
+        <div class="game-col-title">🇺🇸 English</div>
+        ${ex.pairs.map((p,i) => `<div class="game-item" data-side="en" data-val="${escHtml(p.en)}" data-id="${i}" onclick="gameSelect(this)">${escHtml(p.en)}</div>`).join('')}
+      </div>
+      <div class="game-col">
+        <div class="game-col-title">🇲🇽 Español</div>
+        ${shuffledEs.map((es,i) => `<div class="game-item" data-side="es" data-val="${escHtml(es)}" onclick="gameSelect(this)">${escHtml(es)}</div>`).join('')}
+      </div>
+    </div>
+    <div class="game-score" id="game-score">Pares encontrados: 0 / ${ex.pairs.length}</div>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="ex-nav">
+      <span class="ex-counter">Ejercicio ${currentExerciseIdx+1} de ${currentUnit.exercises.length}</span>
+      <button class="btn-next" id="btn-next" style="display:none" onclick="nextExercise()">Siguiente →</button>
+    </div>
+  `;
+}
+
+function attachGame(ex) {
+  gameState = { selected: null, side: null, matched: 0, total: ex.pairs.length, pairs: ex.pairs };
+}
+
+function gameSelect(el) {
+  if (el.classList.contains('matched')) return;
+  const side = el.dataset.side;
+  const val = el.dataset.val;
+
+  if (!gameState.selected) {
+    gameState.selected = val;
+    gameState.side = side;
+    document.querySelectorAll('.game-item.selected').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+    return;
+  }
+
+  if (gameState.side === side) {
+    document.querySelectorAll('.game-item.selected').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+    gameState.selected = val;
+    return;
+  }
+
+  const prevSide = gameState.side;
+  const prevVal = gameState.selected;
+  document.querySelectorAll('.game-item.selected').forEach(e=>e.classList.remove('selected'));
+
+  const pair = gameState.pairs.find(p =>
+    (prevSide === 'en' && p.en === prevVal && p.es === val) ||
+    (prevSide === 'es' && p.es === prevVal && p.en === val)
+  );
+
+  if (pair) {
+    document.querySelectorAll('.game-item').forEach(e => {
+      if (e.dataset.val === pair.en || e.dataset.val === pair.es) e.classList.add('matched');
+    });
+    gameState.matched++;
+    document.getElementById('game-score').textContent = `Pares encontrados: ${gameState.matched} / ${gameState.total}`;
+    sessionTotal++;
+    if (gameState.matched === gameState.total) {
+      sessionCorrect++;
+      earnXP(15);
+      showFeedback(true, '🎉 ¡Encontraste todos los pares!');
+      document.getElementById('btn-next').style.display = 'block';
+    }
+  } else {
+    el.classList.add('wrong-flash');
+    document.querySelectorAll('.game-item').forEach(e => { if(e.dataset.val===prevVal) e.classList.add('wrong-flash'); });
+    setTimeout(()=> document.querySelectorAll('.wrong-flash').forEach(e=>e.classList.remove('wrong-flash')), 400);
+  }
+  gameState.selected = null; gameState.side = null;
+}
+
+// ============================================================
+//  HELPERS
+// ============================================================
+function showFeedback(correct, msg) {
+  const fb = document.getElementById('feedback');
+  if (!fb) return;
+  fb.className = `feedback-box show ${correct?'correct-fb':'wrong-fb'}`;
+  fb.innerHTML = `<span>${correct?'✅':'❌'} ${msg}</span>`;
+}
+
+function nextExercise() {
+  stopRecognition();
+  pronunAttempts = 0; pronunPassed = false;
+  currentExerciseIdx++;
+  renderExercise();
+}
+
+async function earnXP(amount) {
+  currentUser.xp = (currentUser.xp || 0) + amount;
+  document.getElementById('header-xp').textContent = currentUser.xp;
+  showToast(`⚡ +${amount} XP`);
+  // Guardar localmente
+  saveLocal();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function confetti() {
+  const colors = ['#6c63ff','#ff6584','#43e97b','#f7971e','#ffd700','#00d2ff'];
+  for (let i=0; i<50; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `left:${Math.random()*100}vw;top:-10px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>0.5?'50%':'2px'};animation-duration:${1.5+Math.random()}s;animation-delay:${Math.random()*0.5}s`;
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(), 3000);
+  }
+}
+
+async function showUnitComplete() {
+  document.getElementById('exercise-container').style.display = 'none';
+  const uc = document.getElementById('unit-complete');
+  uc.style.display = 'block';
+
+  const acc = sessionTotal > 0 ? Math.round((sessionCorrect/sessionTotal)*100) : 0;
+  const xpEarned = currentUnit.xpReward + (acc >= 80 ? 20 : 0);
+
+  document.getElementById('c-correct').textContent = sessionCorrect;
+  document.getElementById('c-total').textContent = sessionTotal;
+  document.getElementById('c-acc').textContent = acc + '%';
+  document.getElementById('complete-xp').textContent = `+${xpEarned} XP ganados`;
+  document.getElementById('complete-stars').textContent = acc >= 85 ? '⭐⭐⭐' : acc >= 60 ? '⭐⭐' : '⭐';
+
+  // Save progress
+  userProgress[currentUnit.id] = { completed: true, xp: xpEarned, correct: sessionCorrect, total: sessionTotal, acc };
+  await earnXP(xpEarned);
+  saveLocal();
+  confetti();
+}
+
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+//  LOCAL STORAGE SAVE
+// ============================================================
+function saveLocal() {
+  if (!currentUser) return;
+  currentUser.progress = userProgress;
+  localStorage.setItem('englishlab_' + currentUser.control_number, JSON.stringify(currentUser));
+}
+
+// ============================================================
+//  BOOT
+// ============================================================
+function hideLoading() {
+  const ls = document.getElementById('loading-screen');
+  if (ls) ls.style.display = 'none';
+}
+
+window.addEventListener('load', () => {
+  initStars();
+  setTimeout(hideLoading, 1800);
+});
+</script>
+</body>
+</html>
