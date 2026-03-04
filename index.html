@@ -1277,14 +1277,100 @@ function speakWord(word) {
   speechSynthesis.speak(utt);
 }
 
-async function startRecognition(targetWord) {
-  stopRecognition();
+function _handleTranscriptResult(transcript, targetWord, btn, result, attEl) {
+  const target = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
+  pronunAttempts++;
+  attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
 
-  const btn    = document.getElementById('btn-mic');
-  const result = document.getElementById('pronun-result');
-  const attEl  = document.getElementById('pronun-attempts');
-  if (!btn || !result) return;
+  const isMatch = checkPronunciationMatch(transcript, target);
+  if (isMatch) {
+    result.className = 'pronun-result success';
+    result.textContent = transcript ? `✅ ¡Muy bien! Dijiste: "${transcript}"` : '✅ ¡Muy bien!';
+    if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
+    sessionTotal++;
+    showFeedback(true, '¡Pronunciación correcta!');
+    document.getElementById('btn-next').style.display = 'block';
+  } else {
+    result.className = 'pronun-result error';
+    result.textContent = transcript
+      ? `❌ Se detectó: "${transcript}" — ¡Intenta de nuevo!`
+      : '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
+    sessionTotal++;
+    if (pronunAttempts >= 3) {
+      showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
+      document.getElementById('btn-next').style.display = 'block';
+    }
+  }
+}
 
+function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const sr = new SpeechRec();
+  sr.lang = 'en-US';
+  sr.continuous = false;
+  sr.interimResults = false;
+  sr.maxAlternatives = 3;
+  recognition = sr;
+
+  btn.classList.add('recording');
+  btn.textContent = '⏹ Detener';
+  result.className = '';
+  result.textContent = 'Habla ahora...';
+
+  let gotResult = false;
+
+  sr.onresult = (e) => {
+    gotResult = true;
+    // pick best alternative that matches
+    let best = '';
+    for (let i = 0; i < e.results[0].length; i++) {
+      const alt = e.results[0][i].transcript.toLowerCase().replace(/[^a-z\s']/g, '').trim();
+      if (!best || checkPronunciationMatch(alt, targetWord.toLowerCase().replace(/[^a-z\s']/g,''))) {
+        best = alt;
+        if (checkPronunciationMatch(best, targetWord.toLowerCase().replace(/[^a-z\s']/g,''))) break;
+      }
+    }
+    _handleTranscriptResult(best, targetWord, btn, result, attEl);
+  };
+
+  sr.onerror = (e) => {
+    gotResult = true;
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 Hablar';
+    btn.onclick = () => startRecognition(targetWord);
+    result.className = 'pronun-result error';
+    if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+      result.textContent = '⚠️ Permiso denegado. Permite el micrófono en tu navegador.';
+      document.getElementById('btn-next').style.display = 'block';
+    } else if (e.error === 'no-speech') {
+      result.textContent = '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
+      pronunAttempts++;
+      attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
+      sessionTotal++;
+      if (pronunAttempts >= 3) {
+        showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
+        document.getElementById('btn-next').style.display = 'block';
+      }
+    } else if (e.error === 'network') {
+      result.textContent = '⚠️ Error de red. Verifica tu conexión e intenta de nuevo.';
+    } else {
+      result.textContent = `⚠️ Error de micrófono (${e.error}). Intenta de nuevo.`;
+    }
+    recognition = null;
+  };
+
+  sr.onend = () => {
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 Hablar';
+    btn.onclick = () => startRecognition(targetWord);
+    recognition = null;
+  };
+
+  sr.start();
+  btn.onclick = () => { try { sr.stop(); } catch(e){} };
+}
+
+async function _startWhisperRecognition(targetWord, btn, result, attEl) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     result.className = 'pronun-result error';
     result.textContent = '⚠️ Tu navegador no soporta grabación de audio. Usa Chrome o Firefox actualizado.';
@@ -1307,14 +1393,14 @@ async function startRecognition(targetWord) {
     btn.onclick = () => startRecognition(targetWord);
     result.className = 'pronun-result error';
     if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
-      result.textContent = '⚠️ Permiso denegado. Haz clic en el candado de la barra de direcciones y permite el micrófono.';
+      result.textContent = '⚠️ Permiso denegado. Permite el micrófono en tu navegador.';
       document.getElementById('btn-next').style.display = 'block';
     } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
       result.textContent = '⚠️ El micrófono está siendo usado por otra aplicación. Ciérrala e intenta de nuevo.';
     } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
       result.textContent = '⚠️ No se encontró micrófono. Conecta uno e intenta de nuevo.';
     } else if (e.name === 'SecurityError') {
-      result.textContent = '⚠️ El micrófono solo funciona en HTTPS o localhost. Contacta al administrador.';
+      result.textContent = '⚠️ El micrófono solo funciona en HTTPS o localhost.';
     } else {
       result.textContent = `⚠️ Error (${e.name}): ${e.message || 'No se pudo acceder al micrófono.'}`;
     }
@@ -1359,30 +1445,8 @@ async function startRecognition(targetWord) {
 
       const output     = await transcriber(audioData, { language: 'english', task: 'transcribe' });
       const transcript = (output.text || '').toLowerCase().replace(/[^a-z\s']/g, '').trim();
-      const target     = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
 
-      pronunAttempts++;
-      attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
-
-      const isMatch = checkPronunciationMatch(transcript, target);
-      if (isMatch) {
-        result.className = 'pronun-result success';
-        result.textContent = `✅ ¡Muy bien! Dijiste: "${transcript}"`;
-        if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
-        sessionTotal++;
-        showFeedback(true, '¡Pronunciación correcta!');
-        document.getElementById('btn-next').style.display = 'block';
-      } else {
-        result.className = 'pronun-result error';
-        result.textContent = transcript
-          ? `❌ Se detectó: "${transcript}" — ¡Intenta de nuevo!`
-          : '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
-        sessionTotal++;
-        if (pronunAttempts >= 3) {
-          showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
-          document.getElementById('btn-next').style.display = 'block';
-        }
-      }
+      _handleTranscriptResult(transcript, targetWord, btn, result, attEl);
     } catch (e) {
       console.error('Whisper error:', e);
       result.className = 'pronun-result error';
@@ -1390,15 +1454,31 @@ async function startRecognition(targetWord) {
     }
   };
 
-  recorder.start(100); // collect chunks every 100ms
+  recorder.start(100);
 
-  // Auto-stop after 5 seconds
   const autoStop = setTimeout(() => {
     if (_recorder === recorder && recorder.state === 'recording') recorder.stop();
   }, 5000);
 
-  // Let user stop manually by clicking again
   btn.onclick = () => { clearTimeout(autoStop); if (recorder.state === 'recording') recorder.stop(); };
+}
+
+async function startRecognition(targetWord) {
+  stopRecognition();
+
+  const btn    = document.getElementById('btn-mic');
+  const result = document.getElementById('pronun-result');
+  const attEl  = document.getElementById('pronun-attempts');
+  if (!btn || !result) return;
+
+  // Use native Web Speech API when available (Chrome/Android, Safari/iOS)
+  // Fall back to Whisper only for browsers without native support (Firefox)
+  const hasSpeechAPI = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  if (hasSpeechAPI) {
+    _startNativeSpeechRecognition(targetWord, btn, result, attEl);
+  } else {
+    await _startWhisperRecognition(targetWord, btn, result, attEl);
+  }
 }
 
 function checkPronunciationMatch(said, target) {
@@ -1423,6 +1503,7 @@ function stopRecognition() {
   if (_recorder && _recorder.state === 'recording') { try { _recorder.stop(); } catch(e){} }
   if (_recStream) { _recStream.getTracks().forEach(t => t.stop()); _recStream = null; }
   _recorder = null;
+  if (recognition && recognition !== _recorder) { try { recognition.stop(); } catch(e){} }
   recognition = null;
 }
 
