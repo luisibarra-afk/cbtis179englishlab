@@ -1509,7 +1509,8 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   }
 
   btn.onclick = () => {
-    handled = true; // manual stop — don't count as missed
+    // Do NOT set handled=true here — sr.onresult may still fire after sr.stop()
+    // with whatever speech was detected. Let the normal flow process it.
     try { sr.stop(); } catch(e) {}
   };
 }
