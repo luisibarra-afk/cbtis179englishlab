@@ -1290,34 +1290,65 @@ function _startWaveform(stream) {
   canvas.classList.add('active');
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
-
-  try {
-    _waveAudioCtx = new AudioContext();
-    const src = _waveAudioCtx.createMediaStreamSource(stream);
-    _waveAnalyser = _waveAudioCtx.createAnalyser();
-    _waveAnalyser.fftSize = 256;
-    src.connect(_waveAnalyser);
-  } catch(e) { return; }
-
-  const bufLen = _waveAnalyser.frequencyBinCount;
-  const dataArr = new Uint8Array(bufLen);
-  const barW = Math.ceil(W / bufLen) + 1;
   const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#6c63ff';
+
+  if (stream) {
+    // Real analyser from mic stream (Whisper path)
+    try {
+      _waveAudioCtx = new AudioContext();
+      const src = _waveAudioCtx.createMediaStreamSource(stream);
+      _waveAnalyser = _waveAudioCtx.createAnalyser();
+      _waveAnalyser.fftSize = 256;
+      src.connect(_waveAnalyser);
+    } catch(e) { _startFakeWaveform(ctx, W, H, accentColor); return; }
+
+    const bufLen = _waveAnalyser.frequencyBinCount;
+    const dataArr = new Uint8Array(bufLen);
+    const barW = Math.ceil(W / bufLen) + 1;
+
+    function draw() {
+      _waveAnimFrame = requestAnimationFrame(draw);
+      _waveAnalyser.getByteFrequencyData(dataArr);
+      ctx.clearRect(0, 0, W, H);
+      let x = 0;
+      for (let i = 0; i < bufLen; i++) {
+        const barH = (dataArr[i] / 255) * H;
+        ctx.fillStyle = accentColor;
+        ctx.globalAlpha = 0.4 + (dataArr[i] / 255) * 0.6;
+        ctx.beginPath();
+        ctx.roundRect(x, H - barH, barW - 1, barH, 2);
+        ctx.fill();
+        x += barW;
+      }
+      ctx.globalAlpha = 1;
+    }
+    draw();
+  } else {
+    // Fake animated waveform — no mic access needed (native SR path)
+    _startFakeWaveform(ctx, W, H, accentColor);
+  }
+}
+
+function _startFakeWaveform(ctx, W, H, color) {
+  const BARS = 28;
+  const barW = Math.floor(W / BARS) - 2;
+  const speeds = Array.from({length: BARS}, () => 0.8 + Math.random() * 2.4);
+  const offsets = Array.from({length: BARS}, () => Math.random() * Math.PI * 2);
+  const t0 = performance.now();
 
   function draw() {
     _waveAnimFrame = requestAnimationFrame(draw);
-    _waveAnalyser.getByteFrequencyData(dataArr);
+    const t = (performance.now() - t0) / 1000;
     ctx.clearRect(0, 0, W, H);
-    let x = 0;
-    for (let i = 0; i < bufLen; i++) {
-      const barH = (dataArr[i] / 255) * H;
-      const alpha = 0.4 + (dataArr[i] / 255) * 0.6;
-      ctx.fillStyle = accentColor;
-      ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    for (let i = 0; i < BARS; i++) {
+      const amp = 0.15 + 0.85 * Math.abs(Math.sin(t * speeds[i] + offsets[i]));
+      const barH = Math.max(4, amp * H * 0.85);
+      ctx.globalAlpha = 0.35 + amp * 0.55;
+      const x = i * (barW + 2) + 2;
       ctx.beginPath();
-      ctx.roundRect(x, H - barH, barW - 1, barH, 2);
+      ctx.roundRect(x, (H - barH) / 2, barW, barH, 3);
       ctx.fill();
-      x += barW;
     }
     ctx.globalAlpha = 1;
   }
@@ -1395,6 +1426,7 @@ function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
 
   sr.onerror = (e) => {
     gotResult = true;
+    _stopWaveform();
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
     btn.onclick = () => startRecognition(targetWord);
@@ -1427,12 +1459,9 @@ function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
     recognition = null;
   };
 
-  // Open a separate mic stream just for the waveform visualizer
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-      .then(stream => { _waveStream = stream; _startWaveform(stream); })
-      .catch(() => {});
-  }
+  // Fake animated waveform — no separate getUserMedia so it doesn't conflict
+  // with the SpeechRecognition's internal mic access on Android Chrome
+  _startWaveform(null);
 
   sr.start();
   btn.onclick = () => { try { sr.stop(); } catch(e){} };
