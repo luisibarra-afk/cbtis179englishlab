@@ -1492,8 +1492,9 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   };
 
   sr.onend = () => {
-    countMissed(); // must run before cleanup() invalidates the session token
-    cleanup();    // no-op if stale
+    // Delay so onresult (which can fire after onend on some browsers/Android)
+    // has a chance to set handled=true before countMissed runs.
+    setTimeout(() => { countMissed(); cleanup(); }, 300);
   };
 
   _startWaveform(null);
