@@ -1262,6 +1262,10 @@ function startRecognition(targetWord) {
     document.getElementById('btn-next').style.display = 'block';
     return;
   }
+
+  // Detener reconocimiento previo si aún está activo
+  stopRecognition();
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
@@ -1275,8 +1279,13 @@ function startRecognition(targetWord) {
 
   btn.classList.add('recording');
   btn.textContent = '⏹ Grabando...';
+  result.className = '';
+  result.textContent = '';
+
+  let gotResult = false;
 
   recognition.onresult = (event) => {
+    gotResult = true;
     const transcript = event.results[0][0].transcript.toLowerCase().trim();
     const target = targetWord.toLowerCase().replace(/[^a-z\s']/g,'');
     pronunAttempts++;
@@ -1304,6 +1313,7 @@ function startRecognition(targetWord) {
   };
 
   recognition.onerror = (event) => {
+    gotResult = true; // evitar doble mensaje en onend
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
     result.className = 'pronun-result error';
@@ -1311,20 +1321,32 @@ function startRecognition(targetWord) {
       result.textContent = '⚠️ Permiso de micrófono denegado. Actívalo en la configuración del navegador.';
       document.getElementById('btn-next').style.display = 'block';
     } else if (event.error === 'no-speech') {
-      result.textContent = '⚠️ No se detectó audio. Habla más fuerte e intenta de nuevo.';
+      result.textContent = '⚠️ No se detectó voz. Habla más cerca y fuerte, luego intenta de nuevo.';
     } else if (event.error === 'network') {
       result.textContent = '⚠️ Error de red. Verifica tu conexión e intenta de nuevo.';
     } else {
-      result.textContent = '⚠️ No se pudo escuchar. Intenta de nuevo.';
+      result.textContent = `⚠️ Error al grabar (${event.error || 'desconocido'}). Intenta de nuevo.`;
     }
   };
 
   recognition.onend = () => {
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
+    // Si terminó sin capturar nada (falla silenciosa, común en móvil)
+    if (!gotResult) {
+      result.className = 'pronun-result error';
+      result.textContent = '⚠️ No se capturó audio. Asegúrate de hablar al micrófono e intenta de nuevo.';
+    }
   };
 
-  recognition.start();
+  try {
+    recognition.start();
+  } catch (e) {
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 Hablar';
+    result.className = 'pronun-result error';
+    result.textContent = '⚠️ No se pudo iniciar el micrófono. Recarga la página e intenta de nuevo.';
+  }
 }
 
 function checkPronunciationMatch(said, target) {
