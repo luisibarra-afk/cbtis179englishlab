@@ -1307,10 +1307,16 @@ async function startRecognition(targetWord) {
     btn.onclick = () => startRecognition(targetWord);
     result.className = 'pronun-result error';
     if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
-      result.textContent = '⚠️ Permiso de micrófono denegado. Actívalo en la configuración del navegador.';
+      result.textContent = '⚠️ Permiso denegado. Haz clic en el candado de la barra de direcciones y permite el micrófono.';
       document.getElementById('btn-next').style.display = 'block';
+    } else if (e.name === 'NotReadableError' || e.name === 'TrackStartError') {
+      result.textContent = '⚠️ El micrófono está siendo usado por otra aplicación. Ciérrala e intenta de nuevo.';
+    } else if (e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError') {
+      result.textContent = '⚠️ No se encontró micrófono. Conecta uno e intenta de nuevo.';
+    } else if (e.name === 'SecurityError') {
+      result.textContent = '⚠️ El micrófono solo funciona en HTTPS o localhost. Contacta al administrador.';
     } else {
-      result.textContent = '⚠️ No se pudo acceder al micrófono. Recarga la página e intenta de nuevo.';
+      result.textContent = `⚠️ Error (${e.name}): ${e.message || 'No se pudo acceder al micrófono.'}`;
     }
     return;
   }
@@ -1398,8 +1404,9 @@ async function startRecognition(targetWord) {
 function checkPronunciationMatch(said, target) {
   said = said.toLowerCase().replace(/[^a-z\s']/g,'').trim();
   target = target.toLowerCase().replace(/[^a-z\s']/g,'').trim();
+  if (!said) return false;
   if (said === target) return true;
-  if (said.includes(target) || target.includes(said)) return true;
+  if (said.includes(target) || (target.includes(said) && said.length > 0)) return true;
   // Levenshtein básico
   return levenshtein(said, target) <= Math.ceil(target.length * 0.3);
 }
