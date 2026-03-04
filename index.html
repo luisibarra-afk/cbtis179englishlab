@@ -1492,8 +1492,8 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   };
 
   sr.onend = () => {
+    countMissed(); // must run before cleanup() invalidates the session token
     cleanup();    // no-op if stale
-    countMissed(); // no-op if already handled or stale
   };
 
   _startWaveform(null);
