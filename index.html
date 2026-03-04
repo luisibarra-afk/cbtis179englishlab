@@ -1368,33 +1368,33 @@ function _stopWaveform() {
   }
 }
 
-function _handleTranscriptResult(transcript, targetWord, btn, result, attEl) {
+function _handleTranscriptResult(transcript, targetWord, btn, result) {
   const target = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
   pronunAttempts++;
-  attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
+  sessionTotal++;
+  const attEl = document.getElementById('pronun-attempts');
+  if (attEl) attEl.textContent = `Intentos: ${pronunAttempts} / 3`;
 
   const isMatch = checkPronunciationMatch(transcript, target);
   if (isMatch) {
     result.className = 'pronun-result success';
     result.textContent = transcript ? `✅ ¡Muy bien! Dijiste: "${transcript}"` : '✅ ¡Muy bien!';
     if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
-    sessionTotal++;
     showFeedback(true, '¡Pronunciación correcta!');
-    document.getElementById('btn-next').style.display = 'block';
+    const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
   } else {
     result.className = 'pronun-result error';
     result.textContent = transcript
       ? `❌ Se detectó: "${transcript}" — ¡Intenta de nuevo!`
       : '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
-    sessionTotal++;
     if (pronunAttempts >= 3) {
       showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
-      document.getElementById('btn-next').style.display = 'block';
+      const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
     }
   }
 }
 
-function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
+function _startNativeSpeechRecognition(targetWord, btn, result) {
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   const sr = new SpeechRec();
   sr.lang = 'en-US';
@@ -1410,96 +1410,112 @@ function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
 
   let handled = false;
 
+  // Always re-query DOM so stale references never cause silent failures
+  function getAttEl() { return document.getElementById('pronun-attempts'); }
+
+  function cleanup() {
+    _stopWaveform();
+    recognition = null;
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 Hablar';
+    btn.onclick = () => startRecognition(targetWord);
+  }
+
+  function countMissed() {
+    if (handled) return;
+    handled = true;
+    result.className = 'pronun-result error';
+    result.textContent = '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
+    pronunAttempts++;
+    sessionTotal++;
+    const el = getAttEl();
+    if (el) el.textContent = `Intentos: ${pronunAttempts} / 3`;
+    if (pronunAttempts >= 3) {
+      showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
+      const nb = document.getElementById('btn-next');
+      if (nb) nb.style.display = 'block';
+    }
+  }
+
   sr.onresult = (e) => {
+    if (handled) return;
     handled = true;
     let best = '';
     for (let i = 0; i < e.results[0].length; i++) {
       const alt = e.results[0][i].transcript.toLowerCase().replace(/[^a-z\s']/g, '').trim();
-      if (!best || checkPronunciationMatch(alt, targetWord.toLowerCase().replace(/[^a-z\s']/g, ''))) {
-        best = alt;
-        if (checkPronunciationMatch(best, targetWord.toLowerCase().replace(/[^a-z\s']/g, ''))) break;
+      const tgt = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
+      if (!best || checkPronunciationMatch(alt, tgt)) { best = alt; }
+      if (checkPronunciationMatch(best, tgt)) break;
+    }
+    const target = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
+    const isMatch = checkPronunciationMatch(best, target);
+    pronunAttempts++;
+    sessionTotal++;
+    const el = getAttEl();
+    if (el) el.textContent = `Intentos: ${pronunAttempts} / 3`;
+    if (isMatch) {
+      result.className = 'pronun-result success';
+      result.textContent = best ? `✅ ¡Muy bien! Dijiste: "${best}"` : '✅ ¡Muy bien!';
+      if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
+      showFeedback(true, '¡Pronunciación correcta!');
+      const nb = document.getElementById('btn-next');
+      if (nb) nb.style.display = 'block';
+    } else {
+      result.className = 'pronun-result error';
+      result.textContent = best ? `❌ Se detectó: "${best}" — ¡Intenta de nuevo!` : '⚠️ No se detectó voz. Habla más fuerte.';
+      if (pronunAttempts >= 3) {
+        showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
+        const nb = document.getElementById('btn-next');
+        if (nb) nb.style.display = 'block';
       }
     }
-    _handleTranscriptResult(best, targetWord, btn, result, attEl);
   };
 
   sr.onerror = (e) => {
-    handled = true;
-    _stopWaveform();
-    recognition = null;
-
-    // 'aborted' is a Chrome-internal error (mic not fully released yet) — retry once silently
-    if (e.error === 'aborted') {
-      btn.classList.remove('recording');
-      btn.textContent = '🎤 Hablar';
-      result.className = 'pronun-result error';
-      result.textContent = '⚠️ El micrófono tardó en responder. Toca de nuevo 🎤';
-      btn.onclick = () => startRecognition(targetWord);
-      return;
-    }
-
-    btn.classList.remove('recording');
-    btn.textContent = '🎤 Hablar';
-    btn.onclick = () => startRecognition(targetWord);
-    result.className = 'pronun-result error';
-
+    if (handled && e.error !== 'aborted') return;
     if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+      handled = true;
+      cleanup();
+      result.className = 'pronun-result error';
       result.textContent = '⚠️ Permiso denegado. Permite el micrófono en tu navegador.';
-      document.getElementById('btn-next').style.display = 'block';
-    } else if (e.error === 'no-speech') {
-      result.textContent = '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
-      pronunAttempts++;
-      attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
-      sessionTotal++;
-      if (pronunAttempts >= 3) {
-        showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
-        document.getElementById('btn-next').style.display = 'block';
-      }
+      const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
+    } else if (e.error === 'aborted') {
+      // Chrome internal — don't count, just show tap-again hint
+      if (!handled) { handled = true; cleanup(); result.className = 'pronun-result error'; result.textContent = '⚠️ Toca de nuevo el micrófono 🎤'; }
     } else if (e.error === 'network') {
-      result.textContent = '⚠️ Error de red. Verifica tu conexión e intenta de nuevo.';
+      handled = true; cleanup();
+      result.className = 'pronun-result error';
+      result.textContent = '⚠️ Error de red. Verifica tu conexión.';
     } else {
-      result.textContent = `⚠️ Error (${e.error}). Toca el micrófono para intentar de nuevo.`;
+      // no-speech and anything else → count as missed attempt
+      countMissed();
     }
   };
 
   sr.onend = () => {
-    _stopWaveform();
-    btn.classList.remove('recording');
-    btn.textContent = '🎤 Hablar';
-    btn.onclick = () => startRecognition(targetWord);
-    recognition = null;
-
-    // onend fired without any result or error → Android Chrome released mic mid-session
-    // Count it as a missed attempt so the counter moves forward
-    if (!handled) {
-      handled = true;
-      result.className = 'pronun-result error';
-      result.textContent = '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
-      pronunAttempts++;
-      attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
-      sessionTotal++;
-      if (pronunAttempts >= 3) {
-        showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
-        document.getElementById('btn-next').style.display = 'block';
-      }
-    }
+    cleanup();
+    countMissed(); // no-op if already handled
   };
 
-  // Small delay so the mic is fully released from any previous session
-  // (Android Chrome needs ~150ms between SpeechRecognition sessions)
   _startWaveform(null);
-  setTimeout(() => {
-    if (recognition !== sr) return; // cancelled before delay elapsed
-    try { sr.start(); } catch(e) { /* already started or aborted */ }
-  }, 150);
+
+  // Retry-on-fail start: if sr.start() throws (mic still locked), retry once after 300ms
+  let started = false;
+  function tryStart() {
+    if (recognition !== sr) return;
+    try { sr.start(); started = true; } catch(e) {
+      if (!started) setTimeout(tryStart, 300);
+    }
+  }
+  tryStart();
 
   btn.onclick = () => {
-    handled = true; // manual stop — don't count as missed attempt
+    handled = true;
     try { sr.stop(); } catch(e) {}
   };
 }
 
-async function _startWhisperRecognition(targetWord, btn, result, attEl) {
+async function _startWhisperRecognition(targetWord, btn, result) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     result.className = 'pronun-result error';
     result.textContent = '⚠️ Tu navegador no soporta grabación de audio. Usa Chrome o Firefox actualizado.';
@@ -1577,7 +1593,7 @@ async function _startWhisperRecognition(targetWord, btn, result, attEl) {
       const output     = await transcriber(audioData, { language: 'english', task: 'transcribe' });
       const transcript = (output.text || '').toLowerCase().replace(/[^a-z\s']/g, '').trim();
 
-      _handleTranscriptResult(transcript, targetWord, btn, result, attEl);
+      _handleTranscriptResult(transcript, targetWord, btn, result);
     } catch (e) {
       console.error('Whisper error:', e);
       result.className = 'pronun-result error';
@@ -1599,16 +1615,13 @@ async function startRecognition(targetWord) {
 
   const btn    = document.getElementById('btn-mic');
   const result = document.getElementById('pronun-result');
-  const attEl  = document.getElementById('pronun-attempts');
   if (!btn || !result) return;
 
-  // Use native Web Speech API when available (Chrome/Android, Safari/iOS)
-  // Fall back to Whisper only for browsers without native support (Firefox)
   const hasSpeechAPI = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   if (hasSpeechAPI) {
-    _startNativeSpeechRecognition(targetWord, btn, result, attEl);
+    _startNativeSpeechRecognition(targetWord, btn, result);
   } else {
-    await _startWhisperRecognition(targetWord, btn, result, attEl);
+    await _startWhisperRecognition(targetWord, btn, result);
   }
 }
 
