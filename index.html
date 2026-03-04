@@ -1408,29 +1408,41 @@ function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
   result.className = '';
   result.textContent = 'Habla ahora...';
 
-  let gotResult = false;
+  let handled = false;
 
   sr.onresult = (e) => {
-    gotResult = true;
-    // pick best alternative that matches
+    handled = true;
     let best = '';
     for (let i = 0; i < e.results[0].length; i++) {
       const alt = e.results[0][i].transcript.toLowerCase().replace(/[^a-z\s']/g, '').trim();
-      if (!best || checkPronunciationMatch(alt, targetWord.toLowerCase().replace(/[^a-z\s']/g,''))) {
+      if (!best || checkPronunciationMatch(alt, targetWord.toLowerCase().replace(/[^a-z\s']/g, ''))) {
         best = alt;
-        if (checkPronunciationMatch(best, targetWord.toLowerCase().replace(/[^a-z\s']/g,''))) break;
+        if (checkPronunciationMatch(best, targetWord.toLowerCase().replace(/[^a-z\s']/g, ''))) break;
       }
     }
     _handleTranscriptResult(best, targetWord, btn, result, attEl);
   };
 
   sr.onerror = (e) => {
-    gotResult = true;
+    handled = true;
     _stopWaveform();
+    recognition = null;
+
+    // 'aborted' is a Chrome-internal error (mic not fully released yet) — retry once silently
+    if (e.error === 'aborted') {
+      btn.classList.remove('recording');
+      btn.textContent = '🎤 Hablar';
+      result.className = 'pronun-result error';
+      result.textContent = '⚠️ El micrófono tardó en responder. Toca de nuevo 🎤';
+      btn.onclick = () => startRecognition(targetWord);
+      return;
+    }
+
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
     btn.onclick = () => startRecognition(targetWord);
     result.className = 'pronun-result error';
+
     if (e.error === 'not-allowed' || e.error === 'permission-denied') {
       result.textContent = '⚠️ Permiso denegado. Permite el micrófono en tu navegador.';
       document.getElementById('btn-next').style.display = 'block';
@@ -1446,9 +1458,8 @@ function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
     } else if (e.error === 'network') {
       result.textContent = '⚠️ Error de red. Verifica tu conexión e intenta de nuevo.';
     } else {
-      result.textContent = `⚠️ Error de micrófono (${e.error}). Intenta de nuevo.`;
+      result.textContent = `⚠️ Error (${e.error}). Toca el micrófono para intentar de nuevo.`;
     }
-    recognition = null;
   };
 
   sr.onend = () => {
@@ -1457,14 +1468,35 @@ function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
     btn.textContent = '🎤 Hablar';
     btn.onclick = () => startRecognition(targetWord);
     recognition = null;
+
+    // onend fired without any result or error → Android Chrome released mic mid-session
+    // Count it as a missed attempt so the counter moves forward
+    if (!handled) {
+      handled = true;
+      result.className = 'pronun-result error';
+      result.textContent = '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
+      pronunAttempts++;
+      attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
+      sessionTotal++;
+      if (pronunAttempts >= 3) {
+        showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
+        document.getElementById('btn-next').style.display = 'block';
+      }
+    }
   };
 
-  // Fake animated waveform — no separate getUserMedia so it doesn't conflict
-  // with the SpeechRecognition's internal mic access on Android Chrome
+  // Small delay so the mic is fully released from any previous session
+  // (Android Chrome needs ~150ms between SpeechRecognition sessions)
   _startWaveform(null);
+  setTimeout(() => {
+    if (recognition !== sr) return; // cancelled before delay elapsed
+    try { sr.start(); } catch(e) { /* already started or aborted */ }
+  }, 150);
 
-  sr.start();
-  btn.onclick = () => { try { sr.stop(); } catch(e){} };
+  btn.onclick = () => {
+    handled = true; // manual stop — don't count as missed attempt
+    try { sr.stop(); } catch(e) {}
+  };
 }
 
 async function _startWhisperRecognition(targetWord, btn, result, attEl) {
