@@ -464,6 +464,7 @@ let currentExerciseIdx = 0;
 let sessionCorrect = 0;
 let sessionTotal = 0;
 let recognition = null;   // kept for compatibility
+let _srSession  = null;   // token to invalidate stale SR handlers
 let _recorder    = null;
 let _recStream   = null;
 let _whisper     = null;
@@ -1401,6 +1402,10 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   sr.continuous = false;
   sr.interimResults = false;
   sr.maxAlternatives = 3;
+
+  // Session token: any handler that runs after a new session started is ignored
+  const mySession = {};
+  _srSession = mySession;
   recognition = sr;
 
   btn.classList.add('recording');
@@ -1409,26 +1414,26 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   result.textContent = 'Habla ahora...';
 
   let handled = false;
-
-  // Always re-query DOM so stale references never cause silent failures
-  function getAttEl() { return document.getElementById('pronun-attempts'); }
+  function stale() { return _srSession !== mySession; }
 
   function cleanup() {
-    _stopWaveform();
+    if (stale()) return;          // a newer session already took over — don't touch shared state
+    _srSession = null;
     recognition = null;
+    _stopWaveform();
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
     btn.onclick = () => startRecognition(targetWord);
   }
 
   function countMissed() {
-    if (handled) return;
+    if (handled || stale()) return;
     handled = true;
     result.className = 'pronun-result error';
     result.textContent = '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
     pronunAttempts++;
     sessionTotal++;
-    const el = getAttEl();
+    const el = document.getElementById('pronun-attempts');
     if (el) el.textContent = `Intentos: ${pronunAttempts} / 3`;
     if (pronunAttempts >= 3) {
       showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
@@ -1438,79 +1443,73 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
   }
 
   sr.onresult = (e) => {
-    if (handled) return;
+    if (handled || stale()) return;
     handled = true;
+    const tgt = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
     let best = '';
     for (let i = 0; i < e.results[0].length; i++) {
       const alt = e.results[0][i].transcript.toLowerCase().replace(/[^a-z\s']/g, '').trim();
-      const tgt = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
-      if (!best || checkPronunciationMatch(alt, tgt)) { best = alt; }
+      if (!best || checkPronunciationMatch(alt, tgt)) best = alt;
       if (checkPronunciationMatch(best, tgt)) break;
     }
-    const target = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
-    const isMatch = checkPronunciationMatch(best, target);
     pronunAttempts++;
     sessionTotal++;
-    const el = getAttEl();
+    const el = document.getElementById('pronun-attempts');
     if (el) el.textContent = `Intentos: ${pronunAttempts} / 3`;
-    if (isMatch) {
+    if (checkPronunciationMatch(best, tgt)) {
       result.className = 'pronun-result success';
       result.textContent = best ? `✅ ¡Muy bien! Dijiste: "${best}"` : '✅ ¡Muy bien!';
       if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
       showFeedback(true, '¡Pronunciación correcta!');
-      const nb = document.getElementById('btn-next');
-      if (nb) nb.style.display = 'block';
+      const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
     } else {
       result.className = 'pronun-result error';
       result.textContent = best ? `❌ Se detectó: "${best}" — ¡Intenta de nuevo!` : '⚠️ No se detectó voz. Habla más fuerte.';
       if (pronunAttempts >= 3) {
         showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
-        const nb = document.getElementById('btn-next');
-        if (nb) nb.style.display = 'block';
+        const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
       }
     }
   };
 
   sr.onerror = (e) => {
-    if (handled && e.error !== 'aborted') return;
+    if (stale()) return;
     if (e.error === 'not-allowed' || e.error === 'permission-denied') {
-      handled = true;
-      cleanup();
+      handled = true; cleanup();
       result.className = 'pronun-result error';
       result.textContent = '⚠️ Permiso denegado. Permite el micrófono en tu navegador.';
       const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
     } else if (e.error === 'aborted') {
-      // Chrome internal — don't count, just show tap-again hint
-      if (!handled) { handled = true; cleanup(); result.className = 'pronun-result error'; result.textContent = '⚠️ Toca de nuevo el micrófono 🎤'; }
+      // Chrome fires 'aborted' when stopRecognition() cancels mid-session — not a user error
+      handled = true; // prevent countMissed in onend
     } else if (e.error === 'network') {
       handled = true; cleanup();
       result.className = 'pronun-result error';
       result.textContent = '⚠️ Error de red. Verifica tu conexión.';
     } else {
-      // no-speech and anything else → count as missed attempt
-      countMissed();
+      countMissed(); // no-speech + anything else counts as missed
     }
   };
 
   sr.onend = () => {
-    cleanup();
-    countMissed(); // no-op if already handled
+    cleanup();    // no-op if stale
+    countMissed(); // no-op if already handled or stale
   };
 
   _startWaveform(null);
 
-  // Retry-on-fail start: if sr.start() throws (mic still locked), retry once after 300ms
-  let started = false;
-  function tryStart() {
-    if (recognition !== sr) return;
-    try { sr.start(); started = true; } catch(e) {
-      if (!started) setTimeout(tryStart, 300);
-    }
+  try {
+    sr.start();
+  } catch(e) {
+    // sr.start() threw synchronously — wait 250ms for mic to be released, then retry once
+    setTimeout(() => {
+      if (stale()) return;
+      try { sr.start(); } catch(e2) { countMissed(); cleanup(); }
+    }, 250);
   }
-  tryStart();
 
   btn.onclick = () => {
-    handled = true;
+    handled = true; // manual stop — don't count as missed
     try { sr.stop(); } catch(e) {}
   };
 }
@@ -1644,11 +1643,12 @@ function levenshtein(a, b) {
 }
 
 function stopRecognition() {
+  _srSession = null;        // invalidate any active SR session token
   _stopWaveform();
   if (_recorder && _recorder.state === 'recording') { try { _recorder.stop(); } catch(e){} }
   if (_recStream) { _recStream.getTracks().forEach(t => t.stop()); _recStream = null; }
   _recorder = null;
-  if (recognition && recognition !== _recorder) { try { recognition.stop(); } catch(e){} }
+  if (recognition) { try { recognition.stop(); } catch(e){} }
   recognition = null;
 }
 
