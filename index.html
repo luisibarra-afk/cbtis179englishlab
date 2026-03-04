@@ -249,6 +249,8 @@ header {
 .pronun-result.success { color:var(--accent3); background:rgba(67,233,123,0.1); }
 .pronun-result.error { color:var(--accent2); background:rgba(255,101,132,0.1); }
 .pronun-attempts { text-align:center; font-size:0.8rem; color:var(--text2); margin-top:6px; }
+#pronun-wave { display:block; width:100%; height:60px; border-radius:10px; background:rgba(108,99,255,0.08); margin:10px 0; opacity:0; transition:opacity 0.3s; }
+#pronun-wave.active { opacity:1; }
 
 /* Listening */
 .listen-audio-btn {
@@ -466,6 +468,10 @@ let _recorder    = null;
 let _recStream   = null;
 let _whisper     = null;
 let _whisperLoading = false;
+let _waveAnimFrame = null;
+let _waveAudioCtx  = null;
+let _waveAnalyser  = null;
+let _waveStream    = null;
 
 async function _loadWhisper() {
   if (_whisper) return _whisper;
@@ -1074,6 +1080,7 @@ function openUnit(unitId) {
   currentExerciseIdx = 0;
   sessionCorrect = 0;
   sessionTotal = 0;
+  pronunAttempts = 0; pronunPassed = false;
 
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('unit-view').style.display = 'block';
@@ -1249,6 +1256,7 @@ function buildPronunciation(ex) {
       <button class="btn-listen" onclick="speakWord('${ex.word.replace(/'/g,"\\'")}')">🔊 Escuchar</button>
       <button class="btn-mic" id="btn-mic" onclick="startRecognition('${ex.word.replace(/'/g,"\\'")}')">🎤 Hablar</button>
     </div>
+    <canvas id="pronun-wave" width="400" height="60"></canvas>
     <div class="pronun-result" id="pronun-result"></div>
     <div class="pronun-attempts" id="pronun-attempts">Intentos: 0 / 3</div>
     <div class="feedback-box" id="feedback"></div>
@@ -1260,9 +1268,8 @@ function buildPronunciation(ex) {
 }
 
 function attachPronunciation(ex) {
-  // Auto-speak on load
+  pronunAttempts = 0; pronunPassed = false;
   setTimeout(() => speakWord(ex.word), 400);
-  // Pre-warm Whisper model in background so first use is faster
   _loadWhisper().catch(() => {});
 }
 
@@ -1275,6 +1282,59 @@ function speakWord(word) {
   const utt = new SpeechSynthesisUtterance(word);
   utt.lang = 'en-US'; utt.rate = 0.85;
   speechSynthesis.speak(utt);
+}
+
+function _startWaveform(stream) {
+  const canvas = document.getElementById('pronun-wave');
+  if (!canvas) return;
+  canvas.classList.add('active');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  try {
+    _waveAudioCtx = new AudioContext();
+    const src = _waveAudioCtx.createMediaStreamSource(stream);
+    _waveAnalyser = _waveAudioCtx.createAnalyser();
+    _waveAnalyser.fftSize = 256;
+    src.connect(_waveAnalyser);
+  } catch(e) { return; }
+
+  const bufLen = _waveAnalyser.frequencyBinCount;
+  const dataArr = new Uint8Array(bufLen);
+  const barW = Math.ceil(W / bufLen) + 1;
+  const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#6c63ff';
+
+  function draw() {
+    _waveAnimFrame = requestAnimationFrame(draw);
+    _waveAnalyser.getByteFrequencyData(dataArr);
+    ctx.clearRect(0, 0, W, H);
+    let x = 0;
+    for (let i = 0; i < bufLen; i++) {
+      const barH = (dataArr[i] / 255) * H;
+      const alpha = 0.4 + (dataArr[i] / 255) * 0.6;
+      ctx.fillStyle = accentColor;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.roundRect(x, H - barH, barW - 1, barH, 2);
+      ctx.fill();
+      x += barW;
+    }
+    ctx.globalAlpha = 1;
+  }
+  draw();
+}
+
+function _stopWaveform() {
+  if (_waveAnimFrame) { cancelAnimationFrame(_waveAnimFrame); _waveAnimFrame = null; }
+  if (_waveAudioCtx) { try { _waveAudioCtx.close(); } catch(e){} _waveAudioCtx = null; }
+  _waveAnalyser = null;
+  if (_waveStream) { _waveStream.getTracks().forEach(t => t.stop()); _waveStream = null; }
+  const canvas = document.getElementById('pronun-wave');
+  if (canvas) {
+    canvas.classList.remove('active');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
 }
 
 function _handleTranscriptResult(transcript, targetWord, btn, result, attEl) {
@@ -1360,11 +1420,19 @@ function _startNativeSpeechRecognition(targetWord, btn, result, attEl) {
   };
 
   sr.onend = () => {
+    _stopWaveform();
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
     btn.onclick = () => startRecognition(targetWord);
     recognition = null;
   };
+
+  // Open a separate mic stream just for the waveform visualizer
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      .then(stream => { _waveStream = stream; _startWaveform(stream); })
+      .catch(() => {});
+  }
 
   sr.start();
   btn.onclick = () => { try { sr.stop(); } catch(e){} };
@@ -1387,6 +1455,7 @@ async function _startWhisperRecognition(targetWord, btn, result, attEl) {
   try {
     stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     _recStream = stream;
+    _startWaveform(stream);
   } catch (e) {
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
@@ -1415,6 +1484,7 @@ async function _startWhisperRecognition(targetWord, btn, result, attEl) {
   recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
 
   recorder.onstop = async () => {
+    _stopWaveform();
     if (_recStream) { _recStream.getTracks().forEach(t => t.stop()); _recStream = null; }
     _recorder   = null;
     recognition = null;
@@ -1500,6 +1570,7 @@ function levenshtein(a, b) {
 }
 
 function stopRecognition() {
+  _stopWaveform();
   if (_recorder && _recorder.state === 'recording') { try { _recorder.stop(); } catch(e){} }
   if (_recStream) { _recStream.getTracks().forEach(t => t.stop()); _recStream = null; }
   _recorder = null;
