@@ -461,7 +461,26 @@ let currentUnit = null;
 let currentExerciseIdx = 0;
 let sessionCorrect = 0;
 let sessionTotal = 0;
-let recognition = null;
+let recognition = null;   // kept for compatibility
+let _recorder    = null;
+let _recStream   = null;
+let _whisper     = null;
+let _whisperLoading = false;
+
+async function _loadWhisper() {
+  if (_whisper) return _whisper;
+  if (_whisperLoading) {
+    while (_whisperLoading) await new Promise(r => setTimeout(r, 150));
+    return _whisper;
+  }
+  _whisperLoading = true;
+  try {
+    const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+    _whisper = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', { quantized: true });
+    _whisperLoading = false;
+    return _whisper;
+  } catch (e) { _whisperLoading = false; throw e; }
+}
 
 // ============================================================
 //  DATOS: 8 MÓDULOS → Inglés II (A1+) MCCEMS 2025
@@ -1243,6 +1262,8 @@ function buildPronunciation(ex) {
 function attachPronunciation(ex) {
   // Auto-speak on load
   setTimeout(() => speakWord(ex.word), 400);
+  // Pre-warm Whisper model in background so first use is faster
+  _loadWhisper().catch(() => {});
 }
 
 let pronunAttempts = 0;
@@ -1256,97 +1277,122 @@ function speakWord(word) {
   speechSynthesis.speak(utt);
 }
 
-function startRecognition(targetWord) {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showToast('⚠️ Tu navegador no soporta micrófono. Usa Chrome.');
+async function startRecognition(targetWord) {
+  stopRecognition();
+
+  const btn    = document.getElementById('btn-mic');
+  const result = document.getElementById('pronun-result');
+  const attEl  = document.getElementById('pronun-attempts');
+  if (!btn || !result) return;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    result.className = 'pronun-result error';
+    result.textContent = '⚠️ Tu navegador no soporta grabación de audio. Usa Chrome o Firefox actualizado.';
     document.getElementById('btn-next').style.display = 'block';
     return;
   }
 
-  // Detener reconocimiento previo si aún está activo
-  stopRecognition();
-
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.lang = 'en-US';
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  const btn = document.getElementById('btn-mic');
-  const result = document.getElementById('pronun-result');
-  const attEl = document.getElementById('pronun-attempts');
-  if (!btn || !result) return;
-
   btn.classList.add('recording');
-  btn.textContent = '⏹ Grabando...';
+  btn.textContent = '⏹ Detener';
   result.className = '';
-  result.textContent = '';
+  result.textContent = 'Habla ahora...';
 
-  let gotResult = false;
-
-  recognition.onresult = (event) => {
-    gotResult = true;
-    const transcript = event.results[0][0].transcript.toLowerCase().trim();
-    const target = targetWord.toLowerCase().replace(/[^a-z\s']/g,'');
-    pronunAttempts++;
-    attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
-
-    const isMatch = checkPronunciationMatch(transcript, target);
-    if (isMatch) {
-      result.className = 'pronun-result success';
-      result.textContent = `✅ ¡Muy bien! Dijiste: "${transcript}"`;
-      if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
-      sessionTotal++;
-      showFeedback(true, '¡Pronunciación correcta!');
-      document.getElementById('btn-next').style.display = 'block';
-    } else {
-      result.className = 'pronun-result error';
-      result.textContent = `❌ Se detectó: "${transcript}" — ¡Intenta de nuevo!`;
-      sessionTotal++;
-      if (pronunAttempts >= 3) {
-        showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
-        document.getElementById('btn-next').style.display = 'block';
-      }
-    }
-    btn.classList.remove('recording');
-    btn.textContent = '🎤 Hablar';
-  };
-
-  recognition.onerror = (event) => {
-    gotResult = true; // evitar doble mensaje en onend
-    btn.classList.remove('recording');
-    btn.textContent = '🎤 Hablar';
-    result.className = 'pronun-result error';
-    if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-      result.textContent = '⚠️ Permiso de micrófono denegado. Actívalo en la configuración del navegador.';
-      document.getElementById('btn-next').style.display = 'block';
-    } else if (event.error === 'no-speech') {
-      result.textContent = '⚠️ No se detectó voz. Habla más cerca y fuerte, luego intenta de nuevo.';
-    } else if (event.error === 'network') {
-      result.textContent = '⚠️ Error de red. Verifica tu conexión e intenta de nuevo.';
-    } else {
-      result.textContent = `⚠️ Error al grabar (${event.error || 'desconocido'}). Intenta de nuevo.`;
-    }
-  };
-
-  recognition.onend = () => {
-    btn.classList.remove('recording');
-    btn.textContent = '🎤 Hablar';
-    // Si terminó sin capturar nada (falla silenciosa, común en móvil)
-    if (!gotResult) {
-      result.className = 'pronun-result error';
-      result.textContent = '⚠️ No se capturó audio. Asegúrate de hablar al micrófono e intenta de nuevo.';
-    }
-  };
-
+  let stream;
   try {
-    recognition.start();
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    _recStream = stream;
   } catch (e) {
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
+    btn.onclick = () => startRecognition(targetWord);
     result.className = 'pronun-result error';
-    result.textContent = '⚠️ No se pudo iniciar el micrófono. Recarga la página e intenta de nuevo.';
+    if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+      result.textContent = '⚠️ Permiso de micrófono denegado. Actívalo en la configuración del navegador.';
+      document.getElementById('btn-next').style.display = 'block';
+    } else {
+      result.textContent = '⚠️ No se pudo acceder al micrófono. Recarga la página e intenta de nuevo.';
+    }
+    return;
   }
+
+  const chunks   = [];
+  const recorder = new MediaRecorder(stream);
+  _recorder  = recorder;
+  recognition = recorder;
+
+  recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+  recorder.onstop = async () => {
+    if (_recStream) { _recStream.getTracks().forEach(t => t.stop()); _recStream = null; }
+    _recorder   = null;
+    recognition = null;
+    btn.classList.remove('recording');
+    btn.textContent = '🎤 Hablar';
+    btn.onclick = () => startRecognition(targetWord);
+
+    if (chunks.length === 0) {
+      result.className = 'pronun-result error';
+      result.textContent = '⚠️ No se capturó audio. Habla más cerca del micrófono e intenta de nuevo.';
+      return;
+    }
+
+    result.className = '';
+    result.textContent = !_whisper
+      ? '⏳ Descargando modelo de voz (solo la primera vez, ~40 MB)...'
+      : '🔄 Procesando...';
+
+    try {
+      const transcriber = await _loadWhisper();
+      result.textContent = '🔄 Reconociendo...';
+
+      const blob      = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+      const arrBuf    = await blob.arrayBuffer();
+      const audioCtx  = new AudioContext({ sampleRate: 16000 });
+      const audioBuf  = await audioCtx.decodeAudioData(arrBuf);
+      const audioData = audioBuf.getChannelData(0);
+
+      const output     = await transcriber(audioData, { language: 'english', task: 'transcribe' });
+      const transcript = (output.text || '').toLowerCase().replace(/[^a-z\s']/g, '').trim();
+      const target     = targetWord.toLowerCase().replace(/[^a-z\s']/g, '');
+
+      pronunAttempts++;
+      attEl && (attEl.textContent = `Intentos: ${pronunAttempts} / 3`);
+
+      const isMatch = checkPronunciationMatch(transcript, target);
+      if (isMatch) {
+        result.className = 'pronun-result success';
+        result.textContent = `✅ ¡Muy bien! Dijiste: "${transcript}"`;
+        if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
+        sessionTotal++;
+        showFeedback(true, '¡Pronunciación correcta!');
+        document.getElementById('btn-next').style.display = 'block';
+      } else {
+        result.className = 'pronun-result error';
+        result.textContent = transcript
+          ? `❌ Se detectó: "${transcript}" — ¡Intenta de nuevo!`
+          : '⚠️ No se detectó voz. Habla más fuerte e intenta de nuevo.';
+        sessionTotal++;
+        if (pronunAttempts >= 3) {
+          showFeedback(false, `No importa, ¡sigue practicando! La palabra es: ${targetWord}`);
+          document.getElementById('btn-next').style.display = 'block';
+        }
+      }
+    } catch (e) {
+      console.error('Whisper error:', e);
+      result.className = 'pronun-result error';
+      result.textContent = '⚠️ Error al procesar el audio. Recarga la página e intenta de nuevo.';
+    }
+  };
+
+  recorder.start(100); // collect chunks every 100ms
+
+  // Auto-stop after 5 seconds
+  const autoStop = setTimeout(() => {
+    if (_recorder === recorder && recorder.state === 'recording') recorder.stop();
+  }, 5000);
+
+  // Let user stop manually by clicking again
+  btn.onclick = () => { clearTimeout(autoStop); if (recorder.state === 'recording') recorder.stop(); };
 }
 
 function checkPronunciationMatch(said, target) {
@@ -1367,7 +1413,10 @@ function levenshtein(a, b) {
 }
 
 function stopRecognition() {
-  if (recognition) { try { recognition.stop(); } catch(e){} recognition = null; }
+  if (_recorder && _recorder.state === 'recording') { try { _recorder.stop(); } catch(e){} }
+  if (_recStream) { _recStream.getTracks().forEach(t => t.stop()); _recStream = null; }
+  _recorder = null;
+  recognition = null;
 }
 
 // ============================================================
