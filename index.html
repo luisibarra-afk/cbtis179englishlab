@@ -1303,11 +1303,20 @@ function startRecognition(targetWord) {
     btn.textContent = '🎤 Hablar';
   };
 
-  recognition.onerror = () => {
-    result.className = 'pronun-result error';
-    result.textContent = '⚠️ No se pudo escuchar. Intenta de nuevo.';
+  recognition.onerror = (event) => {
     btn.classList.remove('recording');
     btn.textContent = '🎤 Hablar';
+    result.className = 'pronun-result error';
+    if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+      result.textContent = '⚠️ Permiso de micrófono denegado. Actívalo en la configuración del navegador.';
+      document.getElementById('btn-next').style.display = 'block';
+    } else if (event.error === 'no-speech') {
+      result.textContent = '⚠️ No se detectó audio. Habla más fuerte e intenta de nuevo.';
+    } else if (event.error === 'network') {
+      result.textContent = '⚠️ Error de red. Verifica tu conexión e intenta de nuevo.';
+    } else {
+      result.textContent = '⚠️ No se pudo escuchar. Intenta de nuevo.';
+    }
   };
 
   recognition.onend = () => {
@@ -1315,7 +1324,6 @@ function startRecognition(targetWord) {
     btn.textContent = '🎤 Hablar';
   };
 
-  pronunAttempts === 0 && (pronunAttempts = 0);
   recognition.start();
 }
 
