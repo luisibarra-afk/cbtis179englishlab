@@ -451,7 +451,7 @@ header {
     <div class="progress-section">
       <h3>Progreso del semestre</h3>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:0.85rem;color:var(--text2)" id="progress-label">0 de 8 módulos completados</span>
+        <span style="font-size:0.85rem;color:var(--text2)" id="progress-label">0 de 8 semanas completadas</span>
         <span style="font-size:0.85rem;font-weight:800;color:var(--accent)" id="progress-pct">0%</span>
       </div>
       <div class="progress-bar-wrap">
@@ -459,7 +459,7 @@ header {
       </div>
     </div>
 
-    <h3 style="font-size:1rem;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px;">Módulos de práctica</h3>
+    <h3 style="font-size:1rem;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px;">Semanas del semestre</h3>
     <div class="units-grid" id="units-grid"></div>
   </div>
 
@@ -1013,6 +1013,32 @@ const UNITS = [
 ];
 
 // ============================================================
+//  BLOQUES (4 bloques × 2 semanas)
+// ============================================================
+const BLOCKS = [
+  {
+    id: 1, title: 'Fundamentos',
+    weeks: [1, 2],
+    badge: { icon: '🌱', name: 'Semilla del Inglés', desc: 'Completaste las primeras 2 semanas del semestre.' }
+  },
+  {
+    id: 2, title: 'Expresión',
+    weeks: [3, 4],
+    badge: { icon: '📚', name: 'Estudiante Activo', desc: 'Dominaste expresiones y vocabulario del bloque 2.' }
+  },
+  {
+    id: 3, title: 'Comunicación',
+    weeks: [5, 6],
+    badge: { icon: '🚀', name: 'Comunicador', desc: 'Superaste el bloque de comunicación intermedia.' }
+  },
+  {
+    id: 4, title: 'Dominio',
+    weeks: [7, 8],
+    badge: { icon: '🏆', name: 'Maestro del Lab', desc: '¡Completaste todos los módulos del semestre!' }
+  }
+];
+
+// ============================================================
 //  STARS CANVAS
 // ============================================================
 function initStars() {
@@ -1082,36 +1108,67 @@ function initApp() {
 function renderDashboard() {
   const grid = document.getElementById('units-grid');
   grid.innerHTML = '';
-  let completed = 0;
-  UNITS.forEach((unit, i) => {
-    const prog = userProgress[unit.id] || {};
-    const isDone = prog.completed;
-    if (isDone) completed++;
-    const isLocked = i > 0 && !(userProgress[UNITS[i-1].id] || {}).completed;
+  grid.className = ''; // usar layout de bloques, no grid de tarjetas
 
-    const card = document.createElement('div');
-    card.className = `unit-card${isDone?' completed':''}${isLocked?' locked':''}`;
-    card.onclick = () => openUnit(unit.id);
-    card.innerHTML = `
-      <div class="unit-header">
-        <div class="unit-icon">${unit.icon}</div>
-        <div class="unit-badge ${isDone?'done':'new'}">${isDone?'✓ Hecho':isLocked?'🔒 Bloqueado':'▶ Nuevo'}</div>
+  let totalCompleted = 0;
+
+  BLOCKS.forEach(block => {
+    const blockUnits = block.weeks.map(w => UNITS.find(u => u.id === w)).filter(Boolean);
+    const blockCompleted = blockUnits.filter(u => (userProgress[u.id] || {}).completed).length;
+    const blockEarned = blockCompleted === blockUnits.length;
+    totalCompleted += blockCompleted;
+
+    const sec = document.createElement('div');
+    sec.className = 'block-section';
+    sec.innerHTML = `
+      <div class="block-header">
+        <div class="block-header-left">
+          <div>
+            <div class="block-num">Bloque ${block.id}</div>
+            <div class="block-title">${block.title}</div>
+            <div class="block-progress-mini">${blockCompleted} / ${blockUnits.length} semanas completadas</div>
+          </div>
+        </div>
+        <div class="block-badge-slot" style="cursor:pointer;text-align:center" onclick="showBadgeInfo(${block.id})">
+          <div class="badge-icon${blockEarned ? ' earned' : ''}">${blockEarned ? block.badge.icon : '🔒'}</div>
+          <div class="badge-label">${block.badge.name}</div>
+        </div>
       </div>
-      <div class="unit-num">Módulo ${unit.id}</div>
-      <div class="unit-title">${unit.title}</div>
-      <div class="unit-desc">${unit.desc}</div>
-      <div class="unit-meta">
-        <span style="font-size:0.8rem;color:var(--text2)">${unit.exercises.length} ejercicios</span>
-        <span class="unit-xp">⚡ ${unit.xpReward} XP</span>
-      </div>
+      <div class="block-weeks" id="bw-${block.id}"></div>
     `;
-    grid.appendChild(card);
+    grid.appendChild(sec);
+
+    const weeksEl = document.getElementById(`bw-${block.id}`);
+    blockUnits.forEach(unit => {
+      const gIdx = UNITS.indexOf(unit);
+      const prog = userProgress[unit.id] || {};
+      const isDone = prog.completed;
+      const isLocked = gIdx > 0 && !(userProgress[UNITS[gIdx - 1].id] || {}).completed;
+
+      const card = document.createElement('div');
+      card.className = `unit-card${isDone ? ' completed' : ''}${isLocked ? ' locked' : ''}`;
+      card.onclick = () => openUnit(unit.id);
+      card.innerHTML = `
+        <div class="unit-header">
+          <div class="unit-icon">${unit.icon}</div>
+          <div class="unit-badge ${isDone ? 'done' : 'new'}">${isDone ? '✓ Hecho' : isLocked ? '🔒' : '▶ Nuevo'}</div>
+        </div>
+        <div class="unit-num">Semana ${unit.id}</div>
+        <div class="unit-title">${unit.title}</div>
+        <div class="unit-desc">${unit.desc}</div>
+        <div class="unit-meta">
+          <span style="font-size:0.8rem;color:var(--text2)">${unit.exercises.length} ejercicios</span>
+          <span class="unit-xp">⚡ ${unit.xpReward} XP</span>
+        </div>
+      `;
+      weeksEl.appendChild(card);
+    });
   });
 
-  const pct = Math.round((completed / UNITS.length) * 100);
+  const pct = Math.round((totalCompleted / UNITS.length) * 100);
   document.getElementById('main-progress-bar').style.width = pct + '%';
   document.getElementById('progress-pct').textContent = pct + '%';
-  document.getElementById('progress-label').textContent = `${completed} de ${UNITS.length} módulos completados`;
+  document.getElementById('progress-label').textContent = `${totalCompleted} de ${UNITS.length} semanas completadas`;
 }
 
 // ============================================================
@@ -1225,8 +1282,8 @@ function attachMultiple(ex) {
       if (idx === ex.answer) {
         btn.classList.add('correct');
         sessionCorrect++;
-        showFeedback(true, '¡Correcto! ' + (ex.explanation||''));
         earnXP(10);
+        showFeedback(true, '¡Correcto! ' + (ex.explanation||''), 10);
       } else {
         btn.classList.add('wrong');
         document.querySelectorAll('.choice-btn')[ex.answer].classList.add('correct');
@@ -1275,8 +1332,8 @@ function checkFill(answer) {
   if (correct) {
     inp.classList.add('correct');
     sessionCorrect++;
-    showFeedback(true, '¡Excelente! Eso es correcto.');
     earnXP(10);
+    showFeedback(true, '¡Excelente! Eso es correcto.', 10);
   } else {
     inp.classList.add('wrong');
     showFeedback(false, `La respuesta correcta es: "${answer}"`);
@@ -1421,8 +1478,8 @@ function _handleTranscriptResult(transcript, targetWord, btn, result) {
   if (isMatch) {
     result.className = 'pronun-result success';
     result.textContent = transcript ? `✅ ¡Muy bien! Dijiste: "${transcript}"` : '✅ ¡Muy bien!';
-    if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
-    showFeedback(true, '¡Pronunciación correcta!');
+    if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; showFeedback(true, '¡Pronunciación correcta!', 15); }
+    else { showFeedback(true, '¡Pronunciación correcta!'); }
     const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
   } else {
     result.className = 'pronun-result error';
@@ -1493,8 +1550,8 @@ function _startNativeSpeechRecognition(targetWord, btn, result) {
     if (checkPronunciationMatch(best, tgt)) {
       result.className = 'pronun-result success';
       result.textContent = best ? `✅ ¡Muy bien! Dijiste: "${best}"` : '✅ ¡Muy bien!';
-      if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; }
-      showFeedback(true, '¡Pronunciación correcta!');
+      if (!pronunPassed) { earnXP(15); pronunPassed = true; sessionCorrect++; showFeedback(true, '¡Pronunciación correcta!', 15); }
+      else { showFeedback(true, '¡Pronunciación correcta!'); }
       const nb = document.getElementById('btn-next'); if (nb) nb.style.display = 'block';
     } else {
       result.className = 'pronun-result error';
@@ -1747,8 +1804,8 @@ function attachListen(ex) {
       if (idx === ex.answer) {
         btn.classList.add('correct');
         sessionCorrect++;
-        showFeedback(true, '¡Correcto! Buen oído 👂');
         earnXP(12);
+        showFeedback(true, '¡Correcto! Buen oído 👂', 12);
       } else {
         btn.classList.add('wrong');
         document.querySelectorAll('.choice-btn')[ex.answer].classList.add('correct');
@@ -1841,7 +1898,7 @@ function gameSelect(el) {
     if (gameState.matched === gameState.total) {
       sessionCorrect++;
       earnXP(15);
-      showFeedback(true, '🎉 ¡Encontraste todos los pares!');
+      showFeedback(true, '🎉 ¡Encontraste todos los pares!', 15);
       document.getElementById('btn-next').style.display = 'block';
     }
   } else {
@@ -1855,11 +1912,12 @@ function gameSelect(el) {
 // ============================================================
 //  HELPERS
 // ============================================================
-function showFeedback(correct, msg) {
+function showFeedback(correct, msg, xp) {
   const fb = document.getElementById('feedback');
   if (!fb) return;
   fb.className = `feedback-box show ${correct?'correct-fb':'wrong-fb'}`;
-  fb.innerHTML = `<span>${correct?'✅':'❌'} ${msg}</span>`;
+  const xpHtml = (correct && xp) ? `<span class="xp-earned">+${xp} XP ⚡</span>` : '';
+  fb.innerHTML = `<span>${correct?'✅':'❌'} ${msg}</span>${xpHtml}`;
 }
 
 function nextExercise() {
@@ -1914,6 +1972,14 @@ async function showUnitComplete() {
   await earnXP(xpEarned);
   saveLocal();
   confetti();
+
+  // Check if a block badge was just earned
+  const earnedBlock = BLOCKS.find(block => {
+    const blockUnits = block.weeks.map(w => UNITS.find(u => u.id === w)).filter(Boolean);
+    return blockUnits.some(u => u.id === currentUnit.id) &&
+           blockUnits.every(u => (userProgress[u.id] || {}).completed);
+  });
+  if (earnedBlock) setTimeout(() => showBadgeCelebration(earnedBlock), 1800);
 }
 
 function shuffle(arr) {
@@ -1923,6 +1989,45 @@ function shuffle(arr) {
 
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+//  BADGE FUNCTIONS
+// ============================================================
+function showBadgeInfo(blockId) {
+  const block = BLOCKS.find(b => b.id === blockId);
+  if (!block) return;
+  const blockUnits = block.weeks.map(w => UNITS.find(u => u.id === w)).filter(Boolean);
+  const earned = blockUnits.every(u => (userProgress[u.id] || {}).completed);
+  const overlay = document.createElement('div');
+  overlay.className = 'badge-modal-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="badge-modal">
+      <div class="bm-icon">${earned ? block.badge.icon : '🔒'}</div>
+      <div class="bm-label">Insignia — Bloque ${blockId}</div>
+      <div class="bm-name">${block.badge.name}</div>
+      <div class="bm-desc">${earned ? block.badge.desc : 'Completa todas las semanas de este bloque para desbloquear esta insignia.'}</div>
+      <button class="btn-primary" style="max-width:200px;margin:0 auto" onclick="this.closest('.badge-modal-overlay').remove()">Cerrar</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function showBadgeCelebration(block) {
+  const overlay = document.createElement('div');
+  overlay.className = 'badge-modal-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="badge-modal">
+      <div class="bm-icon">${block.badge.icon}</div>
+      <div class="bm-label">🎉 ¡Insignia Desbloqueada!</div>
+      <div class="bm-name">${block.badge.name}</div>
+      <div class="bm-desc">${block.badge.desc}</div>
+      <button class="btn-primary" style="max-width:200px;margin:0 auto" onclick="this.closest('.badge-modal-overlay').remove()">¡Genial! 🚀</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }
 
 // ============================================================
