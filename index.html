@@ -415,6 +415,10 @@ header {
     <button class="btn-primary" id="btn-login" onclick="doLogin()">Entrar al Lab 🚀</button>
     <div class="login-error" id="login-error"></div>
     <button onclick="showTeacherLogin()" style="background:none;border:none;color:var(--text2);font-size:0.75rem;margin-top:24px;cursor:pointer;text-decoration:underline">Acceso maestro</button>
+    <div style="margin-top:28px;border-top:1px solid var(--border);padding-top:16px;text-align:center">
+      <p style="font-size:0.78rem;color:var(--accent3);font-style:italic;font-weight:700;margin-bottom:6px">&#x00A1;Porque la DGETI se siente y se siente bien!</p>
+      <p style="font-size:0.7rem;color:var(--text2);line-height:1.5">© Luis Eduardo Ibarra Hernández<br>CBTis 179 · DGETI Hidalgo</p>
+    </div>
   </div>
 </div>
 
@@ -498,7 +502,7 @@ header {
     <div class="progress-section">
       <h3>Progreso del semestre</h3>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:0.85rem;color:var(--text2)" id="progress-label">0 de 8 semanas completadas</span>
+        <span style="font-size:0.85rem;color:var(--text2)" id="progress-label">0 de 15 semanas completadas</span>
         <span style="font-size:0.85rem;font-weight:800;color:var(--accent)" id="progress-pct">0%</span>
       </div>
       <div class="progress-bar-wrap">
@@ -1058,11 +1062,431 @@ const UNITS = [
         explanation: 'Comparativo de adjetivos largos: more + adj + than.'
       }
     ]
+  },
+  {
+    id: 9,
+    icon: '⏪',
+    title: 'Past Simple',
+    titleEs: 'Pasado simple',
+    desc: 'Habla sobre eventos y acciones del pasado',
+    propósito: 'Propósito 9: Pasado simple — verbos regulares e irregulares',
+    xpReward: 65,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'yesterday',
+        phonetic: '/ˈjɛstərdeɪ/',
+        meaning: 'ayer',
+        sentence: 'I went to the park yesterday.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige el pasado simple correcto',
+        question: 'Last night I ___ a great movie.',
+        choices: ['watch', 'watched', 'watching', 'watches'],
+        answer: 1,
+        explanation: 'Verbos regulares: agrega -ed para el pasado simple.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa con el pasado de "go"',
+        sentence_parts: ['We ', ' to the beach last summer.'],
+        answer: 'went',
+        hint: 'go → went (irregular)'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une el verbo con su forma en pasado',
+        pairs: [
+          { en: 'eat', es: 'ate' },
+          { en: 'have', es: 'had' },
+          { en: 'see', es: 'saw' },
+          { en: 'buy', es: 'bought' }
+        ]
+      },
+      {
+        type: 'multiple',
+        instruction: 'Forma la pregunta en pasado',
+        question: '___ you ___ the homework yesterday?',
+        choices: ['Did / do', 'Did / did', 'Do / did', 'Did / done'],
+        answer: 0,
+        explanation: 'Preguntas en pasado: Did + sujeto + verbo base.'
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y elige lo que oyes',
+        utterance: 'She studied for three hours last night.',
+        choices: ['She studied for three hours last night.', 'She studies every morning.', 'Did she study last week?', 'She went to bed early yesterday.'],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 10,
+    icon: '🔮',
+    title: 'Going to Future',
+    titleEs: 'Planes con going to',
+    desc: 'Habla sobre planes y predicciones futuras',
+    propósito: 'Propósito 10: Futuro con going to y will',
+    xpReward: 65,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'going to',
+        phonetic: '/ˈɡoʊɪŋ tuː/',
+        meaning: 'va a / voy a',
+        sentence: "I'm going to study tonight."
+      },
+      {
+        type: 'multiple',
+        instruction: 'Selecciona la forma correcta',
+        question: 'Look at those clouds. It ___ rain.',
+        choices: ["is going to", 'will going to', 'going to', 'is go to'],
+        answer: 0,
+        explanation: '"Is going to" expresa una predicción basada en evidencia.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa el plan futuro',
+        sentence_parts: ['They ', ' visit their grandparents this weekend.'],
+        answer: 'are going to',
+        hint: 'are + going to + verbo base'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une las expresiones de tiempo futuro',
+        pairs: [
+          { en: 'tomorrow', es: 'mañana' },
+          { en: 'next week', es: 'la próxima semana' },
+          { en: 'soon', es: 'pronto' },
+          { en: 'this weekend', es: 'este fin de semana' }
+        ]
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la negación correcta',
+        question: 'She ___ go to the party. She\'s busy.',
+        choices: ["isn't going to", "doesn't going to", "won't going to", "not going to"],
+        answer: 0,
+        explanation: '"Isn\'t going to" es la negación con going to.'
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y selecciona',
+        utterance: "We're going to visit Mexico City next month.",
+        choices: ["We're going to visit Mexico City next month.", "We visited Mexico City last year.", "Are you going to travel soon?", "She will go to the capital tomorrow."],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 11,
+    icon: '🔴',
+    title: 'What Are You Doing?',
+    titleEs: 'Presente continuo',
+    desc: 'Describe lo que está pasando justo ahora',
+    propósito: 'Propósito 11: Presente continuo — acciones en progreso',
+    xpReward: 60,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'right now',
+        phonetic: '/raɪt naʊ/',
+        meaning: 'ahora mismo',
+        sentence: "She's talking on the phone right now."
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la forma correcta del presente continuo',
+        question: 'The students ___ a test at this moment.',
+        choices: ['are taking', 'is taking', 'takes', 'taking'],
+        answer: 0,
+        explanation: 'Presente continuo: sujeto + am/is/are + verbo-ing.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa con la forma -ing correcta',
+        sentence_parts: ['He is ', ' to music and dancing.'],
+        answer: 'listening',
+        hint: 'listen → listening'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une el verbo con su forma -ing',
+        pairs: [
+          { en: 'run', es: 'running' },
+          { en: 'swim', es: 'swimming' },
+          { en: 'write', es: 'writing' },
+          { en: 'study', es: 'studying' }
+        ]
+      },
+      {
+        type: 'multiple',
+        instruction: 'Forma la pregunta',
+        question: '___ your parents ___ TV right now?',
+        choices: ['Are / watching', 'Is / watching', 'Do / watching', 'Are / watch'],
+        answer: 0,
+        explanation: 'Pregunta en presente continuo: Are + sujeto plural + verbo-ing.'
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y elige',
+        utterance: 'My brother is playing video games in his room.',
+        choices: ['My brother is playing video games in his room.', 'My brother plays games every day.', 'Is your brother studying?', 'They are watching a movie together.'],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 12,
+    icon: '💼',
+    title: 'Jobs & Workplace',
+    titleEs: 'Trabajos y entorno laboral',
+    desc: 'Vocabulario de profesiones y actividades laborales',
+    propósito: 'Propósito 12: Profesiones, habilidades y ambiente de trabajo',
+    xpReward: 65,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'engineer',
+        phonetic: '/ˌɛndʒɪˈnɪər/',
+        meaning: 'ingeniero/a',
+        sentence: 'She wants to be an engineer.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Selecciona la profesión correcta',
+        question: 'A person who fixes electrical systems is a(n) ___.',
+        choices: ['architect', 'electrician', 'accountant', 'chef'],
+        answer: 1,
+        explanation: '"Electrician" es la persona que trabaja con sistemas eléctricos.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa la oración',
+        sentence_parts: ['He works in a ', ' and fixes computers every day.'],
+        answer: 'workshop',
+        hint: 'workshop = taller'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une la profesión con su descripción',
+        pairs: [
+          { en: 'teacher', es: 'maestro/a' },
+          { en: 'doctor', es: 'médico/a' },
+          { en: 'mechanic', es: 'mecánico/a' },
+          { en: 'programmer', es: 'programador/a' }
+        ]
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la frase correcta para describir habilidades laborales',
+        question: 'In my job, I ___ with computers and networks.',
+        choices: ['work', 'works', 'working', 'worked'],
+        answer: 0,
+        explanation: 'Con "I" en presente simple: verb base sin -s.'
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y selecciona',
+        utterance: 'I want to be a software developer in the future.',
+        choices: ['I want to be a software developer in the future.', 'She works as a nurse in a hospital.', 'He is studying to become an engineer.', 'They need a new mechanic at the shop.'],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 13,
+    icon: '🏥',
+    title: 'Health & Body',
+    titleEs: 'Salud y cuerpo',
+    desc: 'Habla sobre síntomas, partes del cuerpo y consejos de salud',
+    propósito: 'Propósito 13: Vocabulario de salud y cuerpo humano',
+    xpReward: 65,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'headache',
+        phonetic: '/ˈhɛdeɪk/',
+        meaning: 'dolor de cabeza',
+        sentence: 'I have a headache. I need to rest.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Selecciona la expresión correcta',
+        question: 'She ___ a fever and a sore throat.',
+        choices: ['has', 'have', 'is', 'feels'],
+        answer: 0,
+        explanation: '"Has" para describir síntomas con she/he/it.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa el consejo médico',
+        sentence_parts: ['You should ', ' a lot of water when you are sick.'],
+        answer: 'drink',
+        hint: 'should + verbo base'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une la parte del cuerpo con su nombre',
+        pairs: [
+          { en: 'knee', es: 'rodilla' },
+          { en: 'shoulder', es: 'hombro' },
+          { en: 'throat', es: 'garganta' },
+          { en: 'chest', es: 'pecho' }
+        ]
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige el consejo correcto',
+        question: 'If you have a cold, you ___ rest and stay warm.',
+        choices: ['should', 'can', 'must not', 'would'],
+        answer: 0,
+        explanation: '"Should" da recomendaciones o consejos.'
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y elige',
+        utterance: "I don't feel well. My stomach hurts.",
+        choices: ["I don't feel well. My stomach hurts.", 'She has a headache and a fever.', 'You should see a doctor today.', 'He broke his leg playing football.'],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 14,
+    icon: '💻',
+    title: 'Technology & Internet',
+    titleEs: 'Tecnología e Internet',
+    desc: 'Vocabulario tecnológico esencial para el mundo digital',
+    propósito: 'Propósito 14: Tecnología, redes y comunicación digital',
+    xpReward: 70,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'download',
+        phonetic: '/ˈdaʊnloʊd/',
+        meaning: 'descargar',
+        sentence: 'I need to download the app first.'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Selecciona la palabra correcta',
+        question: 'You need a ___ to connect to the internet wirelessly.',
+        choices: ['keyboard', 'Wi-Fi router', 'monitor', 'hard drive'],
+        answer: 1,
+        explanation: 'Un router Wi-Fi proporciona conexión inalámbrica a internet.'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa la oración',
+        sentence_parts: ['Please ', ' your password to keep your account safe.'],
+        answer: 'update',
+        hint: 'update = actualizar'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Une los términos tecnológicos con su significado',
+        pairs: [
+          { en: 'upload', es: 'subir / cargar' },
+          { en: 'software', es: 'programa / aplicación' },
+          { en: 'network', es: 'red' },
+          { en: 'screen', es: 'pantalla' }
+        ]
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la preposición correcta',
+        question: 'She sent the file ___ email.',
+        choices: ['by', 'in', 'on', 'with'],
+        answer: 0,
+        explanation: '"By email" significa a través del correo electrónico.'
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha y selecciona',
+        utterance: 'My laptop is not working. I need to restart it.',
+        choices: ['My laptop is not working. I need to restart it.', 'Can you send me the file by email?', 'She uploads photos to social media every day.', 'The internet connection is very slow today.'],
+        answer: 0
+      }
+    ]
+  },
+  {
+    id: 15,
+    icon: '🌟',
+    title: 'Final Review',
+    titleEs: 'Repaso y cierre del semestre',
+    desc: 'Demuestra todo lo que aprendiste en el semestre',
+    propósito: 'Propósito 15: Evaluación integradora — cierre de semestre',
+    xpReward: 100,
+    exercises: [
+      {
+        type: 'pronunciation',
+        word: 'achievement',
+        phonetic: '/əˈtʃiːvmənt/',
+        meaning: 'logro',
+        sentence: 'Learning English is a great achievement!'
+      },
+      {
+        type: 'multiple',
+        instruction: 'Integra conocimientos — elige la opción correcta',
+        question: 'Last week, Maria ___ to work, but today she ___ from home.',
+        choices: ['went / is working', 'goes / worked', 'went / works', 'go / working'],
+        answer: 0,
+        explanation: 'Pasado simple (went) + presente continuo (is working).'
+      },
+      {
+        type: 'fill',
+        instruction: 'Completa el párrafo',
+        sentence_parts: ['He is a ', ' who designs computer systems.'],
+        answer: 'programmer',
+        hint: 'profesión del área tecnológica'
+      },
+      {
+        type: 'game',
+        gameType: 'match',
+        instruction: 'Repaso final: une los conceptos con su categoría',
+        pairs: [
+          { en: 'headache', es: 'salud' },
+          { en: 'download', es: 'tecnología' },
+          { en: 'went', es: 'pasado de go' },
+          { en: 'going to', es: 'futuro planeado' }
+        ]
+      },
+      {
+        type: 'multiple',
+        instruction: 'Elige la respuesta más apropiada',
+        question: '"How do I get to the hospital?" — "___ straight and turn left at the corner."',
+        choices: ['Go', 'Goes', 'Going', 'Went'],
+        answer: 0,
+        explanation: 'En indicaciones usamos el imperativo: verbo base sin conjugar.'
+      },
+      {
+        type: 'listen',
+        instruction: 'Escucha el mensaje final y elige',
+        utterance: 'Congratulations! You completed the entire semester. You are amazing!',
+        choices: ['Congratulations! You completed the entire semester. You are amazing!', "You didn't finish. Try again next time.", 'Keep practicing every day to improve.', 'The exam is going to be very difficult.'],
+        answer: 0
+      },
+      {
+        type: 'pronunciation',
+        word: 'congratulations',
+        phonetic: '/kənˌɡrætʃʊˈleɪʃənz/',
+        meaning: '¡felicidades!',
+        sentence: 'Congratulations on finishing EnglishLab II!'
+      }
+    ]
   }
 ];
 
 // ============================================================
-//  BLOQUES (4 bloques × 2 semanas)
+//  BLOQUES (8 bloques × 15 semanas)
 // ============================================================
 const BLOCKS = [
   {
@@ -1083,7 +1507,27 @@ const BLOCKS = [
   {
     id: 4, title: 'Dominio',
     weeks: [7, 8],
-    badge: { icon: '🏆', name: 'Maestro del Lab', desc: '¡Completaste todos los módulos del semestre!' }
+    badge: { icon: '🏆', name: 'Maestro del Lab', desc: '¡Dominaste los primeros 4 módulos del semestre!' }
+  },
+  {
+    id: 5, title: 'Pasado y Planes',
+    weeks: [9, 10],
+    badge: { icon: '⏳', name: 'Viajero del Tiempo', desc: 'Aprendiste a hablar en pasado y planear el futuro.' }
+  },
+  {
+    id: 6, title: 'Contexto Diario',
+    weeks: [11, 12],
+    badge: { icon: '🌍', name: 'Comunicador Global', desc: 'Manejas el inglés en situaciones cotidianas.' }
+  },
+  {
+    id: 7, title: 'Mundo Laboral',
+    weeks: [13, 14],
+    badge: { icon: '💼', name: 'Profesional Técnico', desc: 'Dominas el inglés del entorno laboral y tecnológico.' }
+  },
+  {
+    id: 8, title: 'Cierre Semestral',
+    weeks: [15],
+    badge: { icon: '🌟', name: 'Campeón del Lab', desc: '¡Completaste los 15 módulos de EnglishLab II! ¡Excelente!' }
   }
 ];
 
@@ -2169,8 +2613,23 @@ async function teacherLogout() {
 }
 
 async function loadTeacherPanel() {
-  const { data: students } = await sb.from('students').select('*').order('nombre');
+  const { data: students, error: studentsError } = await sb.from('students').select('*').order('nombre');
   const { data: progress } = await sb.from('unit_progress').select('*');
+
+  if (studentsError || !students || students.length === 0) {
+    document.getElementById('teacher-stats-row').innerHTML = `
+      <div style="grid-column:1/-1;background:var(--card);border-radius:12px;padding:20px;border:1px solid #ff6b6b;color:#ff6b6b">
+        <div style="font-weight:800;font-size:1rem;margin-bottom:8px">⚠️ Sin acceso a datos de alumnos</div>
+        <div style="font-size:0.85rem;line-height:1.6;color:var(--text2)">
+          Necesitas agregar una política RLS en Supabase:<br>
+          <strong style="color:var(--text)">Supabase → Table Editor → students → RLS → New Policy</strong><br>
+          Nombre: <em>Teachers can read all</em><br>
+          Comando: <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">FOR SELECT TO authenticated USING (true)</code>
+        </div>
+      </div>`;
+    document.getElementById('teacher-tbody').innerHTML = '';
+    return;
+  }
 
   teacherData = (students || []).map(s => {
     const sp = (progress || []).filter(p => p.student_id === s.id);
@@ -2185,7 +2644,7 @@ async function loadTeacherPanel() {
   const total    = teacherData.length;
   const active   = teacherData.filter(s => s.semanas_done > 0).length;
   const avgXP    = total ? Math.round(teacherData.reduce((a, s) => a + (s.xp || 0), 0) / total) : 0;
-  const finished = teacherData.filter(s => s.semanas_done >= 8).length;
+  const finished = teacherData.filter(s => s.semanas_done >= 15).length;
   document.getElementById('teacher-stats-row').innerHTML = `
     ${[['👩‍🎓 Alumnos', total], ['▶ Activos', active], ['⚡ XP Promedio', avgXP], ['🏆 Completaron todo', finished]]
       .map(([l,v]) => `<div style="background:var(--card);border-radius:12px;padding:16px;text-align:center"><div style="font-size:1.6rem;font-weight:800;color:var(--accent)">${v}</div><div style="font-size:0.8rem;color:var(--text2);margin-top:4px">${l}</div></div>`).join('')}
@@ -2198,12 +2657,12 @@ function renderTeacherTable(rows) {
   const tbody = document.getElementById('teacher-tbody');
   tbody.innerHTML = rows.map(s => {
     const last = s.last_seen ? new Date(s.last_seen).toLocaleDateString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
-    const bar  = `<div style="background:var(--border);border-radius:4px;height:6px;width:100%;margin-top:3px"><div style="background:var(--accent3);height:6px;border-radius:4px;width:${Math.round((s.semanas_done/8)*100)}%"></div></div>`;
+    const bar  = `<div style="background:var(--border);border-radius:4px;height:6px;width:100%;margin-top:3px"><div style="background:var(--accent3);height:6px;border-radius:4px;width:${Math.round((s.semanas_done/15)*100)}%"></div></div>`;
     return `<tr style="border-top:1px solid var(--border)">
       <td style="padding:10px 14px;font-weight:700">${s.nombre || '—'}</td>
       <td style="padding:10px 14px;color:var(--text2)">${s.control_number}</td>
       <td style="padding:10px 14px;color:var(--accent4);font-weight:800">${s.xp || 0}</td>
-      <td style="padding:10px 14px">${s.semanas_done}/8 ${bar}</td>
+      <td style="padding:10px 14px">${s.semanas_done}/15 ${bar}</td>
       <td style="padding:10px 14px">${s.accuracy}%</td>
       <td style="padding:10px 14px;color:var(--text2);font-size:0.82rem">${last}</td>
     </tr>`;
