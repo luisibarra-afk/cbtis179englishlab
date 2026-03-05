@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EnglishLab II — CBTis 179</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 </style>
@@ -404,15 +405,61 @@ header {
   <div style="font-size:0.85rem;color:var(--text2)">Cargando laboratorio...</div>
 </div>
 
-<!-- LOGIN -->
+<!-- LOGIN ALUMNO -->
 <div id="login-screen" style="display:flex">
   <div class="login-box">
     <div class="login-logo">🧪</div>
     <h1>EnglishLab II</h1>
-    <p>Laboratorio Virtual de Inglés — CBTis 179<br><span style="color:var(--text2)">Ingresa tu número de control</span></p>
-    <input type="text" id="control-input" placeholder="Ej. 24CBT0001" maxlength="12" autocomplete="off" />
-    <button class="btn-primary" onclick="doLogin()">Entrar al Lab 🚀</button>
+    <p>Laboratorio Virtual de Inglés — CBTis 179<br><span style="color:var(--text2)">Ingresa los últimos 4 dígitos de tu número de control</span></p>
+    <input type="text" id="control-input" placeholder="Ej. 7834" maxlength="4" inputmode="numeric" pattern="\d{4}" autocomplete="off" />
+    <button class="btn-primary" id="btn-login" onclick="doLogin()">Entrar al Lab 🚀</button>
     <div class="login-error" id="login-error"></div>
+    <button onclick="showTeacherLogin()" style="background:none;border:none;color:var(--text2);font-size:0.75rem;margin-top:24px;cursor:pointer;text-decoration:underline">Acceso maestro</button>
+  </div>
+</div>
+
+<!-- LOGIN MAESTRO -->
+<div id="teacher-login-screen" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:200;align-items:center;justify-content:center">
+  <div class="login-box">
+    <div class="login-logo">🎓</div>
+    <h1>Panel Maestro</h1>
+    <p style="color:var(--text2);font-size:0.9rem;margin-bottom:16px">Acceso exclusivo para docentes</p>
+    <input type="email" id="teacher-email" placeholder="Correo electrónico" autocomplete="off" style="margin-bottom:10px" />
+    <input type="password" id="teacher-pass" placeholder="Contraseña" autocomplete="off" />
+    <button class="btn-primary" id="btn-teacher-login" onclick="doTeacherLogin()">Entrar 🎓</button>
+    <div class="login-error" id="teacher-login-error"></div>
+    <button onclick="hideTeacherLogin()" style="background:none;border:none;color:var(--text2);font-size:0.75rem;margin-top:12px;cursor:pointer;text-decoration:underline">← Volver</button>
+  </div>
+</div>
+
+<!-- PANEL MAESTRO -->
+<div id="teacher-panel" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:200;overflow-y:auto">
+  <header style="background:var(--bg2);padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)">
+    <div style="font-size:1.3rem">🎓</div>
+    <div style="font-weight:800;font-size:1.1rem">Panel Maestro — EnglishLab II</div>
+    <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+      <button onclick="exportCSV()" style="background:var(--accent3);color:#000;border:none;padding:7px 14px;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer">⬇ Exportar CSV</button>
+      <button onclick="teacherLogout()" style="background:var(--card2);color:var(--text);border:none;padding:7px 14px;border-radius:8px;font-size:0.85rem;cursor:pointer">Salir</button>
+    </div>
+  </header>
+  <div style="padding:20px;max-width:1100px;margin:0 auto">
+    <div id="teacher-stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px"></div>
+    <input type="text" id="teacher-search" placeholder="Buscar alumno por nombre o control..." oninput="filterTeacherTable()" style="width:100%;margin-bottom:16px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.9rem" />
+    <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border)">
+      <table id="teacher-table" style="width:100%;border-collapse:collapse;font-size:0.88rem">
+        <thead>
+          <tr style="background:var(--card2);color:var(--text2);text-align:left">
+            <th style="padding:10px 14px">Nombre</th>
+            <th style="padding:10px 14px">Control</th>
+            <th style="padding:10px 14px">XP</th>
+            <th style="padding:10px 14px">Semanas ✓</th>
+            <th style="padding:10px 14px">Precisión</th>
+            <th style="padding:10px 14px">Último acceso</th>
+          </tr>
+        </thead>
+        <tbody id="teacher-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -491,9 +538,11 @@ header {
 
 <script>
 // ============================================================
-//  CONFIGURACIÓN SUPABASE
+//  SUPABASE
 // ============================================================
-// 🔧 Modo demo — sin Supabase. El progreso se guarda en localStorage.
+const SUPABASE_URL  = 'https://iqeqirncmawadgcbiynt.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxZXFpcm5jbWF3YWRnY2JpeW50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NDQ0NjcsImV4cCI6MjA4ODMyMDQ2N30.yfRxHNvbRiy_2LAMgencb9-reAguQuC6WONL1h9Uny4';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ============================================================
 //  ESTADO GLOBAL
@@ -1063,28 +1112,52 @@ function initStars() {
 }
 
 // ============================================================
-//  AUTH
+//  AUTH — ALUMNO
 // ============================================================
 async function doLogin() {
-  const input = document.getElementById('control-input').value.trim().toUpperCase();
+  const pin = document.getElementById('control-input').value.trim();
   const err = document.getElementById('login-error');
-  if (input.length < 6) { err.textContent = 'Número de control muy corto.'; return; }
+  const btn = document.getElementById('btn-login');
+  if (!/^\d{4}$/.test(pin)) { err.textContent = 'Ingresa exactamente 4 dígitos.'; return; }
 
   err.textContent = '';
-  // Modo local: guardar/recuperar de localStorage
-  const key = 'englishlab_' + input;
-  let stored = localStorage.getItem(key);
-  let data;
-  if (stored) {
-    data = JSON.parse(stored);
-  } else {
-    data = { control_number: input, xp: 0, progress: {} };
-    localStorage.setItem(key, JSON.stringify(data));
+  btn.disabled = true;
+  btn.textContent = 'Buscando...';
+
+  try {
+    const { data, error } = await sb
+      .from('students')
+      .select('*')
+      .eq('control_pin', pin)
+      .single();
+
+    if (error || !data) {
+      err.textContent = '❌ No encontrado. Consulta a tu maestro.';
+      btn.disabled = false; btn.textContent = 'Entrar al Lab 🚀';
+      return;
+    }
+
+    // Actualizar last_seen (no bloqueante)
+    sb.from('students').update({ last_seen: new Date().toISOString() }).eq('id', data.id);
+
+    // Cargar progreso
+    const { data: progRows } = await sb
+      .from('unit_progress')
+      .select('*')
+      .eq('student_id', data.id);
+
+    userProgress = {};
+    (progRows || []).forEach(r => {
+      userProgress[r.unit_id] = { completed: r.completed, xp: r.xp_earned, correct: r.correct, total: r.total, acc: r.accuracy };
+    });
+
+    currentUser = { ...data };
+    document.getElementById('login-screen').style.display = 'none';
+    initApp();
+  } catch (e) {
+    err.textContent = '⚠️ Error de conexión. Verifica tu internet.';
+    btn.disabled = false; btn.textContent = 'Entrar al Lab 🚀';
   }
-  currentUser = data;
-  userProgress = data.progress || {};
-  document.getElementById('login-screen').style.display = 'none';
-  initApp();
 }
 
 // También entrar con Enter
@@ -1096,9 +1169,9 @@ document.getElementById('control-input').addEventListener('keydown', e => { if(e
 function initApp() {
   document.getElementById('app').style.display = 'block';
   document.getElementById('header-xp').textContent = currentUser.xp || 0;
-  const initials = currentUser.control_number.substring(0,2).toUpperCase();
-  document.getElementById('user-avatar-btn').textContent = initials;
-  document.getElementById('welcome-name').textContent = currentUser.control_number;
+  const displayName = currentUser.nombre || currentUser.control_number;
+  document.getElementById('user-avatar-btn').textContent = displayName.substring(0, 2).toUpperCase();
+  document.getElementById('welcome-name').textContent = currentUser.nombre ? currentUser.nombre.split(' ')[0] : currentUser.control_pin;
   renderDashboard();
 }
 
@@ -1931,8 +2004,11 @@ async function earnXP(amount) {
   currentUser.xp = (currentUser.xp || 0) + amount;
   document.getElementById('header-xp').textContent = currentUser.xp;
   showToast(`⚡ +${amount} XP`);
-  // Guardar localmente
   saveLocal();
+  // Sync XP a Supabase (no bloqueante)
+  if (currentUser.id) {
+    sb.from('students').update({ xp: currentUser.xp }).eq('id', currentUser.id);
+  }
 }
 
 function showToast(msg) {
@@ -1971,6 +2047,22 @@ async function showUnitComplete() {
   userProgress[currentUnit.id] = { completed: true, xp: xpEarned, correct: sessionCorrect, total: sessionTotal, acc };
   await earnXP(xpEarned);
   saveLocal();
+
+  // Upsert progreso en Supabase
+  if (currentUser.id) {
+    await sb.from('unit_progress').upsert({
+      student_id: currentUser.id,
+      unit_id: currentUnit.id,
+      completed: true,
+      xp_earned: xpEarned,
+      correct: sessionCorrect,
+      total: sessionTotal,
+      accuracy: acc,
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'student_id,unit_id' });
+  }
+
   confetti();
 
   // Check if a block badge was just earned
@@ -2031,12 +2123,113 @@ function showBadgeCelebration(block) {
 }
 
 // ============================================================
-//  LOCAL STORAGE SAVE
+//  LOCAL STORAGE SAVE (caché offline)
 // ============================================================
 function saveLocal() {
   if (!currentUser) return;
   currentUser.progress = userProgress;
-  localStorage.setItem('englishlab_' + currentUser.control_number, JSON.stringify(currentUser));
+  localStorage.setItem('englishlab_' + (currentUser.control_pin || currentUser.control_number), JSON.stringify(currentUser));
+}
+
+// ============================================================
+//  PANEL MAESTRO
+// ============================================================
+let teacherData = [];
+
+function showTeacherLogin() {
+  document.getElementById('teacher-login-screen').style.display = 'flex';
+}
+function hideTeacherLogin() {
+  document.getElementById('teacher-login-screen').style.display = 'none';
+  document.getElementById('teacher-login-error').textContent = '';
+}
+
+async function doTeacherLogin() {
+  const email = document.getElementById('teacher-email').value.trim();
+  const pass  = document.getElementById('teacher-pass').value;
+  const err   = document.getElementById('teacher-login-error');
+  const btn   = document.getElementById('btn-teacher-login');
+  if (!email || !pass) { err.textContent = 'Ingresa correo y contraseña.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    err.textContent = '❌ Credenciales incorrectas.';
+    btn.disabled = false; btn.textContent = 'Entrar 🎓';
+    return;
+  }
+  document.getElementById('teacher-login-screen').style.display = 'none';
+  document.getElementById('teacher-panel').style.display = 'block';
+  await loadTeacherPanel();
+}
+
+async function teacherLogout() {
+  await sb.auth.signOut();
+  document.getElementById('teacher-panel').style.display = 'none';
+}
+
+async function loadTeacherPanel() {
+  const { data: students } = await sb.from('students').select('*').order('nombre');
+  const { data: progress } = await sb.from('unit_progress').select('*');
+
+  teacherData = (students || []).map(s => {
+    const sp = (progress || []).filter(p => p.student_id === s.id);
+    const done  = sp.filter(p => p.completed).length;
+    const totalQ = sp.reduce((a, p) => a + (p.total || 0), 0);
+    const corrQ  = sp.reduce((a, p) => a + (p.correct || 0), 0);
+    const acc    = totalQ > 0 ? Math.round((corrQ / totalQ) * 100) : 0;
+    return { ...s, semanas_done: done, accuracy: acc };
+  });
+
+  // Stats row
+  const total    = teacherData.length;
+  const active   = teacherData.filter(s => s.semanas_done > 0).length;
+  const avgXP    = total ? Math.round(teacherData.reduce((a, s) => a + (s.xp || 0), 0) / total) : 0;
+  const finished = teacherData.filter(s => s.semanas_done >= 8).length;
+  document.getElementById('teacher-stats-row').innerHTML = `
+    ${[['👩‍🎓 Alumnos', total], ['▶ Activos', active], ['⚡ XP Promedio', avgXP], ['🏆 Completaron todo', finished]]
+      .map(([l,v]) => `<div style="background:var(--card);border-radius:12px;padding:16px;text-align:center"><div style="font-size:1.6rem;font-weight:800;color:var(--accent)">${v}</div><div style="font-size:0.8rem;color:var(--text2);margin-top:4px">${l}</div></div>`).join('')}
+  `;
+
+  renderTeacherTable(teacherData);
+}
+
+function renderTeacherTable(rows) {
+  const tbody = document.getElementById('teacher-tbody');
+  tbody.innerHTML = rows.map(s => {
+    const last = s.last_seen ? new Date(s.last_seen).toLocaleDateString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+    const bar  = `<div style="background:var(--border);border-radius:4px;height:6px;width:100%;margin-top:3px"><div style="background:var(--accent3);height:6px;border-radius:4px;width:${Math.round((s.semanas_done/8)*100)}%"></div></div>`;
+    return `<tr style="border-top:1px solid var(--border)">
+      <td style="padding:10px 14px;font-weight:700">${s.nombre || '—'}</td>
+      <td style="padding:10px 14px;color:var(--text2)">${s.control_number}</td>
+      <td style="padding:10px 14px;color:var(--accent4);font-weight:800">${s.xp || 0}</td>
+      <td style="padding:10px 14px">${s.semanas_done}/8 ${bar}</td>
+      <td style="padding:10px 14px">${s.accuracy}%</td>
+      <td style="padding:10px 14px;color:var(--text2);font-size:0.82rem">${last}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterTeacherTable() {
+  const q = document.getElementById('teacher-search').value.toLowerCase();
+  const filtered = teacherData.filter(s =>
+    (s.nombre || '').toLowerCase().includes(q) ||
+    (s.control_number || '').toLowerCase().includes(q)
+  );
+  renderTeacherTable(filtered);
+}
+
+function exportCSV() {
+  const header = ['Nombre', 'Control', 'XP', 'Semanas completadas', 'Precisión %', 'Último acceso'];
+  const rows = teacherData.map(s => [
+    s.nombre || '', s.control_number, s.xp || 0, s.semanas_done, s.accuracy,
+    s.last_seen ? new Date(s.last_seen).toLocaleString('es-MX') : ''
+  ]);
+  const csv = [header, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'englishlab_progreso.csv';
+  a.click();
 }
 
 // ============================================================
