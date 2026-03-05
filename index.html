@@ -142,6 +142,9 @@ header {
 .unit-card:hover { transform:translateY(-3px); box-shadow:var(--shadow); border-color:var(--accent); }
 .unit-card.locked { opacity:0.5; cursor:not-allowed; pointer-events:none; }
 .unit-card.locked:hover { transform:none; }
+.unit-card.teacher-locked { border-color:#ff6b6b55; background:rgba(255,107,107,0.06); cursor:pointer; }
+.unit-card.teacher-locked:hover { transform:translateY(-2px); border-color:#ff6b6b88; }
+.unit-badge.maestro { background:#ff6b6b22; color:#ff6b6b; }
 .unit-card.completed { border-color:var(--accent3); }
 .unit-card.completed::before { background:var(--accent3); opacity:1; }
 
@@ -464,6 +467,20 @@ header {
         <tbody id="teacher-tbody"></tbody>
       </table>
     </div>
+    <!-- CONTROL DE SESIONES -->
+    <div style="margin-top:36px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div>
+          <div style="font-weight:800;font-size:1.05rem">🔐 Control de Sesiones</div>
+          <div style="font-size:0.82rem;color:var(--text2);margin-top:2px">Bloquea semanas para todos los alumnos. Ellos ven la semana pero no pueden entrar hasta que la abras.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;margin-left:16px">
+          <button onclick="lockAllUnits()" style="background:#ff6b6b22;color:#ff6b6b;border:1px solid #ff6b6b55;padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer">🔒 Bloquear todo</button>
+          <button onclick="unlockAllUnits()" style="background:var(--accent3)22;color:var(--accent3);border:1px solid var(--accent3)55;padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer">🔓 Abrir todo</button>
+        </div>
+      </div>
+      <div id="session-locks-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:14px"></div>
+    </div>
   </div>
 </div>
 
@@ -567,6 +584,7 @@ let _waveAnimFrame = null;
 let _waveAudioCtx  = null;
 let _waveAnalyser  = null;
 let _waveStream    = null;
+let teacherLockedUnits = new Set(); // IDs de semanas bloqueadas por el maestro
 
 async function _loadWhisper() {
   if (_whisper) return _whisper;
@@ -1596,6 +1614,13 @@ async function doLogin() {
     });
 
     currentUser = { ...data };
+
+    // Cargar semanas bloqueadas por el maestro
+    try {
+      const { data: locksData } = await sb.from('unit_locks').select('unit_id');
+      teacherLockedUnits = new Set((locksData || []).map(r => r.unit_id));
+    } catch(_) { teacherLockedUnits = new Set(); }
+
     document.getElementById('login-screen').style.display = 'none';
     initApp();
   } catch (e) {
@@ -1661,14 +1686,15 @@ function renderDashboard() {
       const prog = userProgress[unit.id] || {};
       const isDone = prog.completed;
       const isLocked = gIdx > 0 && !(userProgress[UNITS[gIdx - 1].id] || {}).completed;
+      const isTeacherLocked = teacherLockedUnits.has(unit.id);
 
       const card = document.createElement('div');
-      card.className = `unit-card${isDone ? ' completed' : ''}${isLocked ? ' locked' : ''}`;
+      card.className = `unit-card${isDone ? ' completed' : ''}${isLocked ? ' locked' : ''}${isTeacherLocked ? ' teacher-locked' : ''}`;
       card.onclick = () => openUnit(unit.id);
       card.innerHTML = `
         <div class="unit-header">
           <div class="unit-icon">${unit.icon}</div>
-          <div class="unit-badge ${isDone ? 'done' : 'new'}">${isDone ? '✓ Hecho' : isLocked ? '🔒' : '▶ Nuevo'}</div>
+          <div class="unit-badge ${isDone ? 'done' : isTeacherLocked ? 'maestro' : 'new'}">${isDone ? '✓ Hecho' : isTeacherLocked ? '🔒 Bloqueado' : isLocked ? '🔒' : '▶ Nuevo'}</div>
         </div>
         <div class="unit-num">Semana ${unit.id}</div>
         <div class="unit-title">${unit.title}</div>
@@ -1692,6 +1718,10 @@ function renderDashboard() {
 //  OPEN UNIT
 // ============================================================
 function openUnit(unitId) {
+  if (teacherLockedUnits.has(unitId)) {
+    showToast('🔒 El maestro aún no ha abierto esta semana');
+    return;
+  }
   currentUnit = UNITS.find(u => u.id === unitId);
   currentExerciseIdx = 0;
   sessionCorrect = 0;
@@ -2579,6 +2609,55 @@ function saveLocal() {
 //  PANEL MAESTRO
 // ============================================================
 let teacherData = [];
+let _currentLockedSet = new Set(); // estado local para el panel del maestro
+
+// ============================================================
+//  CONTROL DE SESIONES (maestro)
+// ============================================================
+async function loadSessionLocks() {
+  const { data } = await sb.from('unit_locks').select('unit_id');
+  _currentLockedSet = new Set((data || []).map(r => r.unit_id));
+  renderSessionLocks(_currentLockedSet);
+}
+
+function renderSessionLocks(lockedSet) {
+  const grid = document.getElementById('session-locks-grid');
+  if (!grid) return;
+  grid.innerHTML = UNITS.map(u => {
+    const isLocked = lockedSet.has(u.id);
+    return `<div style="background:var(--card);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;border:1px solid ${isLocked ? '#ff6b6b44' : 'var(--border)'}">
+      <div style="font-size:1.3rem">${u.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.74rem;color:var(--text2)">Semana ${u.id}</div>
+        <div style="font-size:0.84rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.title}</div>
+      </div>
+      <button onclick="toggleUnitLock(${u.id}, ${!isLocked})"
+        style="background:${isLocked ? '#ff6b6b' : 'var(--accent3)'};color:${isLocked ? '#fff' : '#000'};border:none;border-radius:8px;padding:5px 11px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">
+        ${isLocked ? '🔒 Bloqueada' : '🟢 Abierta'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+async function toggleUnitLock(unitId, lock) {
+  if (lock) {
+    await sb.from('unit_locks').upsert({ unit_id: unitId, locked_at: new Date().toISOString() }, { onConflict: 'unit_id' });
+  } else {
+    await sb.from('unit_locks').delete().eq('unit_id', unitId);
+  }
+  await loadSessionLocks();
+}
+
+async function lockAllUnits() {
+  const rows = UNITS.map(u => ({ unit_id: u.id, locked_at: new Date().toISOString() }));
+  await sb.from('unit_locks').upsert(rows, { onConflict: 'unit_id' });
+  await loadSessionLocks();
+}
+
+async function unlockAllUnits() {
+  await sb.from('unit_locks').delete().gte('unit_id', 1);
+  await loadSessionLocks();
+}
 
 function showTeacherLogin() {
   document.getElementById('teacher-login-screen').style.display = 'flex';
@@ -2651,6 +2730,7 @@ async function loadTeacherPanel() {
   `;
 
   renderTeacherTable(teacherData);
+  loadSessionLocks();
 }
 
 function renderTeacherTable(rows) {
