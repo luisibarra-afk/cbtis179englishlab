@@ -348,6 +348,47 @@ header {
   header { padding:0 16px; }
   .header-title { font-size:0.95rem; }
 }
+
+/* ===== BLOQUES E INSIGNIAS ===== */
+.block-section { margin-bottom:28px; }
+.block-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px; padding:16px 20px;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+}
+.block-header-left { display:flex; align-items:center; gap:14px; }
+.block-num { font-size:0.72rem; font-weight:800; color:var(--text2); text-transform:uppercase; letter-spacing:1px; }
+.block-title { font-size:1rem; font-weight:900; }
+.block-progress-mini { font-size:0.8rem; color:var(--text2); margin-top:2px; }
+.block-badge-slot { display:flex; align-items:center; }
+.badge-icon {
+  width:52px; height:52px; border-radius:50%; display:flex; align-items:center;
+  justify-content:center; font-size:1.5rem; border:2px solid var(--border);
+  background:var(--bg3); transition:all 0.3s;
+}
+.badge-icon.earned {
+  border-color:gold; background:rgba(255,215,0,0.15);
+  box-shadow:0 0 14px rgba(255,215,0,0.45);
+}
+.badge-label { font-size:0.65rem; color:var(--text2); text-align:center; margin-top:4px; max-width:60px; line-height:1.2; }
+.block-weeks { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; padding:0 2px; }
+
+/* ===== BADGE MODAL ===== */
+.badge-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.72); display:flex;
+  align-items:center; justify-content:center; z-index:1000; animation:fadeInBg 0.3s ease;
+}
+.badge-modal {
+  background:var(--card); border:1px solid gold; border-radius:24px;
+  padding:40px 32px; text-align:center; max-width:340px; width:90%;
+  animation:popIn 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+.bm-icon { font-size:4.5rem; margin-bottom:10px; }
+.bm-label { font-size:0.78rem; font-weight:800; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.bm-name { font-size:1.4rem; font-weight:900; color:gold; margin-bottom:8px; }
+.bm-desc { font-size:0.9rem; color:var(--text2); margin-bottom:24px; line-height:1.4; }
+@keyframes fadeInBg { from{opacity:0} to{opacity:1} }
+@keyframes popIn { from{transform:scale(0.4);opacity:0} to{transform:scale(1);opacity:1} }
 </style>
 </head>
 <body>
@@ -403,7 +444,7 @@ header {
       <div class="welcome-emoji">👋</div>
       <div class="welcome-text">
         <h2>¡Bienvenid@ al laboratorio, <span id="welcome-name">estudiante</span>!</h2>
-        <p>Aquí practicarás inglés del nivel A1+ — <em>These are a few of my favorite things</em>.<br>Completa los 8 módulos para dominar el semestre.</p>
+        <p>Aquí practicarás inglés del nivel A1+ — <em>These are a few of my favorite things</em>.<br>Completa las 15 semanas y desbloquea todas las insignias del semestre.</p>
       </div>
     </div>
 
