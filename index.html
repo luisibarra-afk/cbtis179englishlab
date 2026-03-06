@@ -2479,9 +2479,10 @@ async function earnXP(amount) {
   document.getElementById('header-xp').textContent = currentUser.xp;
   showToast(`⚡ +${amount} XP`);
   saveLocal();
-  // Sync XP a Supabase (no bloqueante)
+  // Sync XP a Supabase
   if (currentUser.id) {
-    sb.from('students').update({ xp: currentUser.xp }).eq('id', currentUser.id);
+    const { error } = await sb.from('students').update({ xp: currentUser.xp }).eq('id', currentUser.id);
+    if (error) console.error('Error al guardar XP:', error.message, error);
   }
 }
 
