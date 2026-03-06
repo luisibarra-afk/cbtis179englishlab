@@ -2717,7 +2717,8 @@ async function loadTeacherPanel() {
     const totalQ = sp.reduce((a, p) => a + (p.total || 0), 0);
     const corrQ  = sp.reduce((a, p) => a + (p.correct || 0), 0);
     const acc    = totalQ > 0 ? Math.round((corrQ / totalQ) * 100) : 0;
-    return { ...s, semanas_done: done, accuracy: acc };
+    const xp     = sp.reduce((a, p) => a + (p.xp_earned || 0), 0) || s.xp || 0;
+    return { ...s, xp, semanas_done: done, accuracy: acc };
   });
 
   // Stats row
