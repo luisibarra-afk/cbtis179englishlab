@@ -2873,15 +2873,42 @@ function exportCSV() {
 let lbAllData = [];
 
 async function loadLeaderboard() {
-  const { data, error } = await sb.from('students')
-    .select('nombre, control_number, xp')
-    .not('nombre', 'is', null)
-    .gt('xp', 0)
-    .order('xp', { ascending: false })
-    .limit(5);
-  if (error || !data || data.length === 0) return;
+  // Usar unit_progress para calcular XP real (cada semana cuenta solo una vez, no farmeable)
+  const { data: progData } = await sb
+    .from('unit_progress')
+    .select('student_id, xp_earned')
+    .eq('completed', true);
 
-  lbAllData = data;
+  let lbData = [];
+
+  if (progData && progData.length > 0) {
+    // Sumar xp_earned por alumno (máx 1 registro por semana gracias al upsert)
+    const xpMap = {};
+    progData.forEach(r => {
+      xpMap[r.student_id] = (xpMap[r.student_id] || 0) + (r.xp_earned || 0);
+    });
+    const sorted = Object.entries(xpMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const ids = sorted.map(([id]) => id);
+    const { data: sts } = await sb.from('students').select('id, nombre, control_number').in('id', ids);
+    if (sts) {
+      lbData = sorted.map(([id, xp]) => {
+        const s = sts.find(st => st.id === id) || {};
+        return { nombre: s.nombre, control_number: s.control_number, xp };
+      }).filter(s => s.nombre);
+    }
+  } else {
+    // Fallback: usar students.xp si no hay acceso a unit_progress
+    const { data } = await sb.from('students')
+      .select('nombre, control_number, xp')
+      .not('nombre', 'is', null)
+      .gt('xp', 0)
+      .order('xp', { ascending: false })
+      .limit(5);
+    lbData = data || [];
+  }
+
+  if (lbData.length === 0) return;
+  lbAllData = lbData;
   const section = document.getElementById('leaderboard-section');
   if (!section) return;
   section.style.display = 'block';
