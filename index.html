@@ -433,6 +433,41 @@ header {
 .word-chip.in-answer { background:rgba(108,99,255,0.18); border-color:var(--accent); color:var(--accent); }
 .word-chip.correct-chip { background:rgba(67,233,123,0.15); border-color:var(--accent3); color:var(--accent3); cursor:default; pointer-events:none; }
 .word-chip.wrong-chip { background:rgba(255,101,132,0.15); border-color:var(--accent2); color:var(--accent2); cursor:default; pointer-events:none; }
+
+/* ===== VITRINA DE INSIGNIAS ===== */
+.badge-showcase-section { margin-bottom:24px; }
+.badge-showcase-section h3 { font-size:1rem; font-weight:700; color:var(--text2); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.badge-showcase { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; }
+.bs-item {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  padding:14px 10px; text-align:center; transition:transform 0.2s;
+}
+.bs-item.earned { border-color:gold; background:rgba(255,215,0,0.07); cursor:pointer; }
+.bs-item.earned:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(255,215,0,0.2); }
+.bs-icon { font-size:2rem; margin-bottom:6px; filter:grayscale(1); opacity:0.35; transition:all 0.3s; }
+.bs-item.earned .bs-icon { filter:none; opacity:1; }
+.bs-name { font-size:0.75rem; font-weight:800; color:var(--text2); line-height:1.3; margin-bottom:3px; }
+.bs-item.earned .bs-name { color:gold; }
+.bs-prog { font-size:0.7rem; color:var(--text2); }
+.bs-item.earned .bs-prog { color:var(--accent3); font-weight:700; }
+
+/* ===== PRÁCTICA LIBRE ===== */
+.practice-section { margin-bottom:24px; }
+.practice-section h3 { font-size:1rem; font-weight:700; color:var(--text2); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.practice-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+.practice-card {
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm);
+  padding:14px 10px; cursor:pointer; transition:all 0.2s; text-align:center;
+}
+.practice-card:hover:not(.practice-locked) { border-color:var(--accent4); transform:translateY(-2px); background:var(--card2); }
+.practice-card.practice-locked { opacity:0.38; cursor:not-allowed; pointer-events:none; }
+.practice-card.practice-random {
+  border-color:var(--accent4);
+  background:linear-gradient(135deg,rgba(247,151,30,0.1),rgba(255,101,132,0.07));
+}
+.practice-icon { font-size:1.6rem; margin-bottom:5px; }
+.practice-label { font-size:0.77rem; font-weight:800; color:var(--text); line-height:1.3; }
+.practice-sub { font-size:0.68rem; color:var(--text2); margin-top:3px; }
 </style>
 </head>
 <body>
@@ -574,8 +609,17 @@ header {
       <button id="lb-toggle" style="display:none;margin-top:8px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:6px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;width:100%;transition:all 0.15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">Ver top 5 →</button>
     </div>
 
-    <!-- REPASO RÁPIDO -->
-    <button class="btn-repaso" id="btn-repaso" style="display:none" onclick="startRepaso()">⚡ Repaso rápido — Practica lo que ya viste</button>
+    <!-- VITRINA DE INSIGNIAS -->
+    <div class="badge-showcase-section">
+      <h3>Mis Insignias 🏅</h3>
+      <div class="badge-showcase" id="badge-showcase"></div>
+    </div>
+
+    <!-- PRÁCTICA LIBRE -->
+    <div class="practice-section" id="practice-section" style="display:none">
+      <h3>Práctica libre 🎯</h3>
+      <div class="practice-grid" id="practice-grid"></div>
+    </div>
 
     <h3 style="font-size:1rem;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px;">Semanas del semestre</h3>
     <div class="units-grid" id="units-grid"></div>
@@ -1630,6 +1674,132 @@ const BLOCKS = [
 ];
 
 // ============================================================
+//  BANCO DE PRÁCTICA EXCLUSIVA (ejercicios distintos a los de cada semana)
+// ============================================================
+const PRACTICE_BANK = {
+  1: [ // Daily Routines — Present Simple
+    { type:'reorder', instruction:'Ordena las palabras:', words:['They','go','to','school','by','bus','every','day'], answer:'They go to school by bus every day', explanation:'Sujeto plural they → verbo base go (sin -s).' },
+    { type:'multiple', instruction:'Selecciona la forma correcta', question:'My father ___ at six every morning.', choices:['wake up','wakes up','is waking','woke up'], answer:1, explanation:'Con he/she/it → wakes (con -s).' },
+    { type:'fill', instruction:'Completa la oración', sentence_parts:['We always ___ lunch together at noon.'], answer:'eat', hint:'we → verbo base sin -s' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','does','not','watch','TV','before','school'], answer:'She does not watch TV before school', explanation:'Negativa con she: does not + verbo base.' },
+    { type:'multiple', instruction:'Elige la forma correcta', question:'Carlos never ___ late to class.', choices:['arrives','arrive','is arrive','arriving'], answer:0, explanation:'Carlos (he) → verbo con -s: arrives.' },
+    { type:'fill', instruction:'Completa la pregunta', sentence_parts:['___ your mother cook dinner every night?'], answer:'Does', hint:'Pregunta con she/he/it → Does' }
+  ],
+  2: [ // Hobbies — Do/Does
+    { type:'reorder', instruction:'Ordena las palabras:', words:['My','friends','enjoy','playing','basketball','on','Fridays'], answer:'My friends enjoy playing basketball on Fridays', explanation:'enjoy + verbo-ing.' },
+    { type:'multiple', instruction:'Elige la forma correcta', question:'What ___ your brother do in his free time?', choices:['do','does','is','are'], answer:1, explanation:'Con he/she → Does en preguntas.' },
+    { type:'fill', instruction:'Completa la oración', sentence_parts:['I love ___ movies on weekends.'], answer:'watching', hint:'love + verb-ing (watching)' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['He','does','not','like','cooking','at','home'], answer:'He does not like cooking at home', explanation:'Negativa: he does not + verbo base.' },
+    { type:'multiple', instruction:'Elige la negación correcta', question:'Ana ___ like reading, but she loves drawing.', choices:["doesn't","don't","isn't","aren't"], answer:0, explanation:'Con she: doesn\'t.' },
+    { type:'fill', instruction:'Completa la oración', sentence_parts:['They ___ football every Saturday in the park.'], answer:'play', hint:'they → verbo base sin -s' }
+  ],
+  3: [ // Can You Do It? — Can/Can't
+    { type:'reorder', instruction:'Ordena las palabras:', words:['My','sister','can','speak','three','languages'], answer:'My sister can speak three languages', explanation:'can + verbo base (sin to).' },
+    { type:'multiple', instruction:'Elige la opción correcta', question:"I ___ ride a horse. I've never tried.", choices:["can","can't","could","should"], answer:1, explanation:'can\'t = no puedo (negativo).' },
+    { type:'fill', instruction:'Completa la pregunta', sentence_parts:['___ your teacher play the guitar?'], answer:'Can', hint:'Pregunta: Can + sujeto + verbo base?' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','cannot','drive','a','car','yet'], answer:'She cannot drive a car yet', explanation:'cannot = can not (forma completa).' },
+    { type:'multiple', instruction:'Elige la habilidad correcta', question:'Birds ___ fly, but penguins cannot.', choices:["can't","should","can","must"], answer:2, explanation:'can expresa habilidad.' },
+    { type:'fill', instruction:'Completa la oración', sentence_parts:['He ___ cook very well. His food is delicious.'], answer:'can', hint:'Habilidad positiva → can' }
+  ],
+  4: [ // Looks & Weather — Present Continuous + descripciones
+    { type:'reorder', instruction:'Ordena las palabras:', words:['They','are','wearing','winter','coats','today'], answer:'They are wearing winter coats today', explanation:'Present continuous: are + verb-ing.' },
+    { type:'multiple', instruction:'Elige la forma correcta', question:'Look outside! The sun ___ shining right now.', choices:['am','is','are','be'], answer:1, explanation:'it/the sun → is.' },
+    { type:'fill', instruction:'Completa la descripción', sentence_parts:['My sister has long ___ hair and green eyes.'], answer:'black', hint:'Un color de cabello (black, brown, red...)' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','is','wearing','a','green','jacket','and','jeans'], answer:'She is wearing a green jacket and jeans', explanation:'Present continuous: She is + verb-ing.' },
+    { type:'multiple', instruction:'Describe el clima', question:'Today the weather ___ very windy and cold.', choices:['am','be','are','is'], answer:3, explanation:'The weather → is (singular).' },
+    { type:'fill', instruction:'Completa la oración', sentence_parts:['It is ___ heavily outside. Bring your umbrella!'], answer:'raining', hint:'rain → raining (present continuous)' }
+  ],
+  5: [ // Bigger & Better — Comparatives/Superlatives
+    { type:'reorder', instruction:'Ordena las palabras:', words:['This','laptop','is','more','expensive','than','that','one'], answer:'This laptop is more expensive than that one', explanation:'Adj. largo: more + adjective + than.' },
+    { type:'multiple', instruction:'Elige el comparativo', question:'Mexico City is ___ than my hometown.', choices:['big','more big','bigger','the biggest'], answer:2, explanation:'Monosílabo: big → bigger.' },
+    { type:'fill', instruction:'Completa el comparativo', sentence_parts:['My dog runs ___ than my cat.'], answer:'faster', hint:'fast → faster' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','is','the','tallest','student','in','the','class'], answer:'She is the tallest student in the class', explanation:'Superlativo: the + adj + -est.' },
+    { type:'multiple', instruction:'Elige el superlativo', question:'Mount Everest is ___ mountain in the world.', choices:['highest','the highest','more high','the more high'], answer:1, explanation:'Superlativo: the + highest.' },
+    { type:'fill', instruction:'Completa el comparativo', sentence_parts:['This test is ___ than the last one.'], answer:'easier', hint:'easy → easier (y → ier)' }
+  ],
+  6: [ // Getting Around — Directions
+    { type:'reorder', instruction:'Ordena las palabras:', words:['Go','straight','and','turn','right','at','the','school'], answer:'Go straight and turn right at the school', explanation:'Imperativo para dar indicaciones.' },
+    { type:'multiple', instruction:'Elige la preposición correcta', question:'The hospital is ___ the pharmacy and the bank.', choices:['next','between','across','behind'], answer:1, explanation:'between A and B = entre A y B.' },
+    { type:'fill', instruction:'Completa la indicación', sentence_parts:['Walk two blocks and ___ left at the corner.'], answer:'turn', hint:'turn left = gira a la izquierda' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['How','do','I','get','to','the','train','station'], answer:'How do I get to the train station', explanation:'How do I get to...? = ¿Cómo llego a...?' },
+    { type:'multiple', instruction:'Elige la preposición', question:'The bakery is ___ the street from the park.', choices:['next','across','behind','between'], answer:1, explanation:'across from = frente a.' },
+    { type:'fill', instruction:'Completa la indicación', sentence_parts:['Go ___ until you reach the traffic light.'], answer:'straight', hint:'go straight = sigue recto' }
+  ],
+  7: [ // I\'d Like That — Would like / Food / Quantities
+    { type:'reorder', instruction:'Ordena las palabras:', words:["Would",'you','like','some','tea','with','your','breakfast'], answer:'Would you like some tea with your breakfast', explanation:'Would you like...? = ¿Te gustaría...?' },
+    { type:'multiple', instruction:'Elige la pregunta de cantidad', question:'___ sugar do you want in your coffee?', choices:['How many','How much','How often','How long'], answer:1, explanation:'How much + incontable (sugar).' },
+    { type:'fill', instruction:'Completa la orden', sentence_parts:["I'd like ___ orange juice and a sandwich, please."], answer:'some', hint:'some + sustantivo incontable o plural' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','would','like','to','order','a','vegetable','soup'], answer:'She would like to order a vegetable soup', explanation:'would like + to + verbo base.' },
+    { type:'multiple', instruction:'Elige la pregunta de cantidad', question:'___ eggs do we need for the cake?', choices:['How much','How many','How often','How long'], answer:1, explanation:'How many + contable plural (eggs).' },
+    { type:'fill', instruction:'Completa la solicitud', sentence_parts:['Could I have the ___, please? I want to order.'], answer:'menu', hint:'menú = menu en inglés' }
+  ],
+  8: [ // Review & Shine — Mixed
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','usually','goes','to','work','by','bicycle','every','day'], answer:'She usually goes to work by bicycle every day', explanation:'Present simple con she: goes.' },
+    { type:'multiple', instruction:'Elige el presente continuo', question:'Tom is ___ a cup of tea in the kitchen now.', choices:['makes','making','made','make'], answer:1, explanation:'Present continuous: is + verb-ing.' },
+    { type:'fill', instruction:'Completa el comparativo', sentence_parts:['This city is ___ than I expected.'], answer:'bigger', hint:'big → bigger' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:["I'd",'like','a','glass','of','water','and','some','bread','please'], answer:"I'd like a glass of water and some bread please", explanation:"I'd like = I would like (deseo cortés)." },
+    { type:'multiple', instruction:'Elige la negación en pasado', question:'We ___ visit our cousins last Christmas.', choices:["didn't","don't","aren't","weren't"], answer:0, explanation:"didn't + verbo base para el pasado negativo." },
+    { type:'fill', instruction:'Completa la indicación', sentence_parts:['Turn ___ at the corner and go two blocks straight.'], answer:'left', hint:'turn left = gira a la izquierda' }
+  ],
+  9: [ // Past Simple
+    { type:'reorder', instruction:'Ordena las palabras:', words:['We','played','basketball','yesterday','afternoon'], answer:'We played basketball yesterday afternoon', explanation:'Pasado regular: play → played.' },
+    { type:'multiple', instruction:'Elige el pasado correcto', question:'She ___ home very late last night.', choices:['arrive','arrives','arrived','arriving'], answer:2, explanation:'Pasado regular: arrive → arrived.' },
+    { type:'fill', instruction:'Completa con el pasado', sentence_parts:['He ___ a new bicycle last week.'], answer:'bought', hint:'buy → bought (irregular)' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['Did','you','eat','breakfast','this','morning'], answer:'Did you eat breakfast this morning', explanation:'Pregunta en pasado: Did + sujeto + verbo base.' },
+    { type:'multiple', instruction:'Elige la negación en pasado', question:"They ___ to the party because it was raining.", choices:["didn't go","don't go","weren't go","not went"], answer:0, explanation:"didn't + verbo base = negación en pasado." },
+    { type:'fill', instruction:'Completa con el pasado irregular', sentence_parts:['We ___ a great time at the fair last Saturday.'], answer:'had', hint:'have → had (irregular)' }
+  ],
+  10: [ // Going to Future
+    { type:'reorder', instruction:'Ordena las palabras:', words:['I','am','going','to','study','for','the','exam','tonight'], answer:'I am going to study for the exam tonight', explanation:'Futuro: am/is/are + going to + verbo base.' },
+    { type:'multiple', instruction:'Elige la forma correcta', question:'She ___ going to travel to Japan next year.', choices:['is','are','am','be'], answer:0, explanation:'she → is going to.' },
+    { type:'fill', instruction:'Completa el plan futuro', sentence_parts:['Are you going to ___ the match tomorrow?'], answer:'watch', hint:'going to + verbo base' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['He','is','not','going','to','buy','a','new','car','this','year'], answer:'He is not going to buy a new car this year', explanation:'Negativa: is not going to + verbo base.' },
+    { type:'multiple', instruction:'Forma la pregunta en futuro', question:'___ they going to move to a new city?', choices:['Is','Are','Am','Do'], answer:1, explanation:'they → Are going to.' },
+    { type:'fill', instruction:'Completa la predicción', sentence_parts:['It looks like it is going to ___ soon.'], answer:'rain', hint:'going to + verbo base (rain)' }
+  ],
+  11: [ // Present Continuous
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','is','reading','a','book','in','her','bedroom'], answer:'She is reading a book in her bedroom', explanation:'Present continuous: She is + verb-ing.' },
+    { type:'multiple', instruction:'Elige el presente continuo', question:'The dog ___ in the garden right now.', choices:['is running','are running','runs','run'], answer:0, explanation:'The dog (singular) → is + running.' },
+    { type:'fill', instruction:'Completa con -ing', sentence_parts:['Look! They are ___ the game on TV.'], answer:'watching', hint:'watch → watching' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['What','are','you','doing','at','this','moment'], answer:'What are you doing at this moment', explanation:'Pregunta: What are + sujeto + doing?' },
+    { type:'multiple', instruction:'Elige la negación', question:"I ___ my homework right now. I'm resting.", choices:["am not doing","am doing","don't do","not doing"], answer:0, explanation:"Negación: am not + verb-ing." },
+    { type:'fill', instruction:'Completa con la forma -ing', sentence_parts:['He is ___ a new song on his guitar.'], answer:'playing', hint:'play → playing' }
+  ],
+  12: [ // Jobs & Workplace
+    { type:'reorder', instruction:'Ordena las palabras:', words:['My','mother','works','as','a','nurse','in','a','clinic'], answer:'My mother works as a nurse in a clinic', explanation:'works (con -s) porque el sujeto es singular.' },
+    { type:'multiple', instruction:'Identifica la profesión', question:'A person who designs buildings is a(n) ___.', choices:['electrician','engineer','architect','accountant'], answer:2, explanation:'architect = arquitecto/a.' },
+    { type:'fill', instruction:'Completa con la profesión', sentence_parts:['He repairs cars every day. He is a ','.'], answer:'mechanic', hint:'mecánico en inglés' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','is','very','good','at','solving','computer','problems'], answer:'She is very good at solving computer problems', explanation:'good at + verb-ing.' },
+    { type:'multiple', instruction:'Elige el verbo correcto', question:'In this job, you ___ with children every day.', choices:['works','work','working','worked'], answer:1, explanation:'Con you → verbo base sin -s: work.' },
+    { type:'fill', instruction:'Completa la aspiración', sentence_parts:['I want to ___ as a programmer after I graduate.'], answer:'work', hint:'want to + verbo base' }
+  ],
+  13: [ // Health & Body
+    { type:'reorder', instruction:'Ordena las palabras:', words:['You','should','rest','when','you','have','a','fever'], answer:'You should rest when you have a fever', explanation:'should + verbo base (recomendación).' },
+    { type:'multiple', instruction:'Identifica el síntoma', question:'I have a ___. My head is really painful.', choices:['stomachache','headache','backache','earache'], answer:1, explanation:'headache = dolor de cabeza.' },
+    { type:'fill', instruction:'Completa el consejo', sentence_parts:['You should not ___ if you have a stomachache.'], answer:'eat', hint:'should not + verbo base' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['He','broke','his','arm','playing','football','last','week'], answer:'He broke his arm playing football last week', explanation:'break → broke (pasado irregular).' },
+    { type:'multiple', instruction:'Elige el mejor consejo', question:'If you have a cold, you should ___.', choices:['go swimming','drink water and rest','eat a lot of sugar','exercise hard'], answer:1, explanation:'Beber agua y descansar es lo correcto.' },
+    { type:'fill', instruction:'Completa la descripción', sentence_parts:['My ___ is sore after swimming for two hours.'], answer:'shoulder', hint:'hombro en inglés' }
+  ],
+  14: [ // Technology & Internet
+    { type:'reorder', instruction:'Ordena las palabras:', words:['She','uploads','videos','to','her','channel','every','week'], answer:'She uploads videos to her channel every week', explanation:'uploads (con -s) porque sujeto es she.' },
+    { type:'multiple', instruction:'Elige el consejo tecnológico', question:'You should ___ your phone before a long trip.', choices:['delete','charge','download','format'], answer:1, explanation:'charge = cargar la batería.' },
+    { type:'fill', instruction:'Completa la acción', sentence_parts:['I need to ___ my files before the computer crashes.'], answer:'save', hint:'save = guardar (archivos)' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['Can','you','send','me','the','document','by','email'], answer:'Can you send me the document by email', explanation:'by email = por correo electrónico.' },
+    { type:'multiple', instruction:'Elige la palabra correcta', question:'She uses social ___ to share her photos.', choices:['network','media','internet','device'], answer:1, explanation:'social media = redes sociales.' },
+    { type:'fill', instruction:'Completa la recomendación', sentence_parts:['Please ___ your password every month for security.'], answer:'change', hint:'change = cambiar' }
+  ],
+  15: [ // Final Review — Mixed
+    { type:'reorder', instruction:'Ordena las palabras:', words:['Last','year','she','traveled','to','three','different','countries'], answer:'Last year she traveled to three different countries', explanation:'Pasado regular: travel → traveled.' },
+    { type:'multiple', instruction:'Elige el verbo en futuro', question:'He is going to ___ his own business someday.', choices:['starts','starting','start','started'], answer:2, explanation:'going to + verbo base (sin -s ni -ing).' },
+    { type:'fill', instruction:'Completa la acción tecnológica', sentence_parts:['My computer is not working. I need to ___ it.'], answer:'restart', hint:'reiniciar en inglés' },
+    { type:'reorder', instruction:'Ordena las palabras:', words:['Are','you','going','to','study','medicine','or','engineering'], answer:'Are you going to study medicine or engineering', explanation:'Pregunta con going to: Are + sujeto + going to + verbo?' },
+    { type:'multiple', instruction:'Elige el tiempo verbal correcto', question:'She ___ at the hospital for five years.', choices:['works','worked','is working','was work'], answer:1, explanation:'Pasado simple (finished action): worked.' },
+    { type:'fill', instruction:'Completa la indicación', sentence_parts:['Turn ___ at the school and go straight to the park.'], answer:'right', hint:'turn right = gira a la derecha' }
+  ]
+};
+
+// ============================================================
 //  STARS CANVAS
 // ============================================================
 function initStars() {
@@ -1794,9 +1964,8 @@ function renderDashboard() {
   document.getElementById('progress-pct').textContent = pct + '%';
   document.getElementById('progress-label').textContent = `${totalCompleted} de ${UNITS.length} semanas completadas`;
 
-  // Show repaso button if at least 1 unit is done
-  const btnRepaso = document.getElementById('btn-repaso');
-  if (btnRepaso) btnRepaso.style.display = totalCompleted > 0 ? 'flex' : 'none';
+  renderBadgeShowcase();
+  renderPracticeSection();
 }
 
 // ============================================================
@@ -2865,6 +3034,94 @@ function exportCSV() {
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'englishlab_progreso.csv';
   a.click();
+}
+
+// ============================================================
+//  VITRINA DE INSIGNIAS
+// ============================================================
+function renderBadgeShowcase() {
+  const container = document.getElementById('badge-showcase');
+  if (!container) return;
+  container.innerHTML = BLOCKS.map(block => {
+    const blockUnits = block.weeks.map(w => UNITS.find(u => u.id === w)).filter(Boolean);
+    const done = blockUnits.filter(u => (userProgress[u.id] || {}).completed).length;
+    const earned = done === blockUnits.length;
+    return `<div class="bs-item${earned ? ' earned' : ''}"${earned ? ` onclick="showBadgeInfo(${block.id})"` : ''}>
+      <div class="bs-icon">${block.badge.icon}</div>
+      <div class="bs-name">${block.badge.name}</div>
+      <div class="bs-prog">${earned ? '✓ Conseguida' : `${done}/${blockUnits.length} semanas`}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+//  PRÁCTICA LIBRE
+// ============================================================
+function renderPracticeSection() {
+  const grid = document.getElementById('practice-grid');
+  const section = document.getElementById('practice-section');
+  if (!grid || !section) return;
+
+  const hasAccessible = UNITS.some((u, i) => {
+    const locked = i > 0 && !(userProgress[UNITS[i-1].id] || {}).completed;
+    return !locked && !teacherLockedUnits.has(u.id) && PRACTICE_BANK[u.id];
+  });
+
+  if (!hasAccessible) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  let html = `<div class="practice-card practice-random" onclick="startRepaso()">
+    <div class="practice-icon">⚡</div>
+    <div class="practice-label">Repaso aleatorio</div>
+    <div class="practice-sub">Mezcla de temas</div>
+  </div>`;
+
+  UNITS.forEach((unit, i) => {
+    if (!PRACTICE_BANK[unit.id]) return;
+    const seqLocked = i > 0 && !(userProgress[UNITS[i-1].id] || {}).completed;
+    const tLocked = teacherLockedUnits.has(unit.id);
+    const locked = seqLocked || tLocked;
+    const sub = locked
+      ? (tLocked ? '🔒 Bloqueada' : '🔒 Completa la anterior')
+      : `S${unit.id} · ${PRACTICE_BANK[unit.id].length} ejercicios`;
+    html += `<div class="practice-card${locked ? ' practice-locked' : ''}" onclick="openPractice(${unit.id})">
+      <div class="practice-icon">${unit.icon}</div>
+      <div class="practice-label">${unit.title}</div>
+      <div class="practice-sub">${sub}</div>
+    </div>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+function openPractice(unitId) {
+  const bank = PRACTICE_BANK[unitId];
+  if (!bank || !bank.length) return;
+  const unit = UNITS.find(u => u.id === unitId);
+
+  // Rotación: cada sesión empieza desde un punto distinto del banco
+  const key = 'elpidx_' + (currentUser.control_pin || currentUser.control_number) + '_' + unitId;
+  const startIdx = parseInt(localStorage.getItem(key) || '0') % bank.length;
+  const selected = shuffle([...bank]).slice(0, Math.min(5, bank.length));
+  localStorage.setItem(key, String((startIdx + 5) % bank.length));
+
+  isRepasoMode = true;
+  repasoXPEarned = 0;
+  currentUnit = { id: null, icon: unit ? unit.icon : '🎯', title: unit ? unit.title : 'Práctica', titleEs: '', propósito: '', exercises: selected, xpReward: 0 };
+  currentExerciseIdx = 0;
+  sessionCorrect = 0;
+  sessionTotal = 0;
+  pronunAttempts = 0;
+  pronunPassed = false;
+
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('unit-view').style.display = 'block';
+  document.getElementById('uv-title').textContent = `${currentUnit.icon} ${currentUnit.title}`;
+  document.getElementById('uv-sub').textContent = `Práctica extra · ${selected.length} ejercicios · XP reducido`;
+  document.getElementById('unit-complete').style.display = 'none';
+  document.getElementById('exercise-container').style.display = 'block';
+  buildProgressDots();
+  renderExercise();
 }
 
 // ============================================================
