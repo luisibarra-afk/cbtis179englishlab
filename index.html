@@ -393,6 +393,46 @@ header {
 .bm-desc { font-size:0.9rem; color:var(--text2); margin-bottom:24px; line-height:1.4; }
 @keyframes fadeInBg { from{opacity:0} to{opacity:1} }
 @keyframes popIn { from{transform:scale(0.4);opacity:0} to{transform:scale(1);opacity:1} }
+
+/* ===== LEADERBOARD ===== */
+.leaderboard-section { margin-bottom:24px; }
+.leaderboard-section h3 { font-size:1rem; font-weight:700; color:var(--text2); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.leaderboard-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.lb-row { display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid var(--border); }
+.lb-row:last-child { border-bottom:none; }
+.lb-row.me { background:rgba(108,99,255,0.14); border-left:3px solid var(--accent); }
+.lb-rank { font-size:1.1rem; font-weight:900; min-width:28px; text-align:center; }
+.lb-name { flex:1; font-weight:700; font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lb-xp { font-weight:800; color:var(--accent4); font-size:0.9rem; white-space:nowrap; }
+
+/* ===== REPASO RÁPIDO ===== */
+.btn-repaso {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; padding:13px; background:linear-gradient(135deg,rgba(247,151,30,0.15),rgba(255,101,132,0.1));
+  border:2px solid var(--accent4); border-radius:var(--radius); color:var(--accent4);
+  font-family:'Nunito',sans-serif; font-weight:800; font-size:0.98rem; cursor:pointer;
+  transition:all 0.2s; margin-bottom:20px;
+}
+.btn-repaso:hover { background:linear-gradient(135deg,rgba(247,151,30,0.28),rgba(255,101,132,0.2)); transform:translateY(-2px); }
+
+/* ===== REORDER EXERCISE ===== */
+.ex-type-badge.reorder { background:rgba(167,139,250,0.18); color:#a78bfa; }
+.reorder-bank { display:flex; flex-wrap:wrap; gap:8px; min-height:40px; margin:12px 0 6px; }
+.reorder-answer {
+  display:flex; flex-wrap:wrap; gap:8px; min-height:52px; padding:10px 12px;
+  background:var(--bg3); border:2px dashed var(--border); border-radius:var(--radius-sm);
+  margin-bottom:14px; align-content:flex-start;
+}
+.reorder-answer.has-words { border-style:solid; border-color:var(--accent); }
+.word-chip {
+  padding:7px 14px; background:var(--card2); border:2px solid var(--border);
+  border-radius:20px; font-weight:700; font-size:0.9rem; cursor:pointer; user-select:none;
+  transition:all 0.15s;
+}
+.word-chip:hover { border-color:var(--accent); background:rgba(108,99,255,0.18); }
+.word-chip.in-answer { background:rgba(108,99,255,0.18); border-color:var(--accent); color:var(--accent); }
+.word-chip.correct-chip { background:rgba(67,233,123,0.15); border-color:var(--accent3); color:var(--accent3); cursor:default; pointer-events:none; }
+.word-chip.wrong-chip { background:rgba(255,101,132,0.15); border-color:var(--accent2); color:var(--accent2); cursor:default; pointer-events:none; }
 </style>
 </head>
 <body>
@@ -527,6 +567,15 @@ header {
       </div>
     </div>
 
+    <!-- LEADERBOARD -->
+    <div class="leaderboard-section" id="leaderboard-section" style="display:none">
+      <h3>Ranking de la clase 🏆</h3>
+      <div class="leaderboard-card" id="leaderboard-list"></div>
+    </div>
+
+    <!-- REPASO RÁPIDO -->
+    <button class="btn-repaso" id="btn-repaso" style="display:none" onclick="startRepaso()">⚡ Repaso rápido — Practica lo que ya viste</button>
+
     <h3 style="font-size:1rem;font-weight:700;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:1px;">Semanas del semestre</h3>
     <div class="units-grid" id="units-grid"></div>
   </div>
@@ -570,6 +619,8 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 // ============================================================
 let currentUser = null;
 let userProgress = {};   // { unitId: { completed, xp, correct, total } }
+let isRepasoMode = false;
+let repasoXPEarned = 0;
 let currentUnit = null;
 let currentExerciseIdx = 0;
 let sessionCorrect = 0;
@@ -660,6 +711,13 @@ const UNITS = [
         utterance: 'She usually goes to school by bus.',
         choices: ['She usually goes to school by bus.', 'She always walks to school.', 'She never takes the bus.', 'She sometimes rides a bike.'],
         answer: 0
+      },
+      {
+        type: 'reorder',
+        instruction: 'Ordena las palabras para formar una oración:',
+        words: ['I', 'wake', 'up', 'early', 'every', 'morning'],
+        answer: 'I wake up early every morning',
+        explanation: 'Orden en inglés: Sujeto + Verbo + Complemento + Expresión de tiempo.'
       }
     ]
   },
@@ -719,6 +777,13 @@ const UNITS = [
         choices: ["don't", "doesn't", "isn't", "aren't"],
         answer: 1,
         explanation: '"Doesn\'t" se usa con he/she/it en la negativa.'
+      },
+      {
+        type: 'reorder',
+        instruction: 'Ordena las palabras para formar una oración:',
+        words: ['She', 'plays', 'the', 'guitar', 'on', 'weekends'],
+        answer: 'She plays the guitar on weekends',
+        explanation: 'Presente simple con she/he/it: verbo con -s (plays).'
       }
     ]
   },
@@ -777,6 +842,13 @@ const UNITS = [
         utterance: 'Can you help me with this exercise?',
         choices: ['Can you help me with this exercise?', "I can't help you now.", 'She can speak three languages.', 'Can he ride a bike?'],
         answer: 0
+      },
+      {
+        type: 'reorder',
+        instruction: 'Ordena las palabras para formar una oración:',
+        words: ['He', 'can', 'swim', 'very', 'fast'],
+        answer: 'He can swim very fast',
+        explanation: 'Con "can": Sujeto + can + verbo base (sin to).'
       }
     ]
   },
@@ -836,6 +908,13 @@ const UNITS = [
         choices: ['have', 'has', 'is', 'are'],
         answer: 1,
         explanation: '"Has" para posesión con she/he/it.'
+      },
+      {
+        type: 'reorder',
+        instruction: 'Ordena las palabras para formar una oración:',
+        words: ['It', 'is', 'raining', 'outside', 'today'],
+        answer: 'It is raining outside today',
+        explanation: 'Presente continuo: It + is + verbo-ing + lugar + tiempo.'
       }
     ]
   },
@@ -1642,6 +1721,7 @@ function initApp() {
   document.getElementById('user-avatar-btn').textContent = displayName.substring(0, 2).toUpperCase();
   document.getElementById('welcome-name').textContent = currentUser.nombre ? currentUser.nombre.split(' ')[0] : currentUser.control_pin;
   renderDashboard();
+  loadLeaderboard();
 }
 
 // ============================================================
@@ -1712,6 +1792,10 @@ function renderDashboard() {
   document.getElementById('main-progress-bar').style.width = pct + '%';
   document.getElementById('progress-pct').textContent = pct + '%';
   document.getElementById('progress-label').textContent = `${totalCompleted} de ${UNITS.length} semanas completadas`;
+
+  // Show repaso button if at least 1 unit is done
+  const btnRepaso = document.getElementById('btn-repaso');
+  if (btnRepaso) btnRepaso.style.display = totalCompleted > 0 ? 'flex' : 'none';
 }
 
 // ============================================================
@@ -1741,8 +1825,12 @@ function openUnit(unitId) {
 }
 
 function backToDashboard() {
+  isRepasoMode = false;
+  repasoXPEarned = 0;
   document.getElementById('dashboard').style.display = 'block';
   document.getElementById('unit-view').style.display = 'none';
+  document.getElementById('exercise-container').style.display = 'block';
+  document.getElementById('unit-complete').style.display = 'none';
   renderDashboard();
   stopRecognition();
 }
@@ -1790,6 +1878,7 @@ function renderExercise() {
   else if (ex.type === 'pronunciation') card.innerHTML = buildPronunciation(ex);
   else if (ex.type === 'listen') card.innerHTML = buildListen(ex);
   else if (ex.type === 'game')  card.innerHTML = buildGame(ex);
+  else if (ex.type === 'reorder') card.innerHTML = buildReorder(ex);
 
   container.appendChild(card);
 
@@ -1799,6 +1888,7 @@ function renderExercise() {
   else if (ex.type === 'pronunciation') attachPronunciation(ex);
   else if (ex.type === 'listen') attachListen(ex);
   else if (ex.type === 'game') attachGame(ex);
+  else if (ex.type === 'reorder') attachReorder(ex);
 }
 
 // ============================================================
@@ -2475,9 +2565,11 @@ function nextExercise() {
 }
 
 async function earnXP(amount) {
-  currentUser.xp = (currentUser.xp || 0) + amount;
+  const actual = isRepasoMode ? Math.ceil(amount / 2) : amount;
+  if (isRepasoMode) repasoXPEarned += actual;
+  currentUser.xp = (currentUser.xp || 0) + actual;
   document.getElementById('header-xp').textContent = currentUser.xp;
-  showToast(`⚡ +${amount} XP`);
+  showToast(`⚡ +${actual} XP`);
   saveLocal();
   // Sync XP a Supabase
   if (currentUser.id) {
@@ -2505,6 +2597,7 @@ function confetti() {
 }
 
 async function showUnitComplete() {
+  if (isRepasoMode) { showRepasoComplete(); return; }
   document.getElementById('exercise-container').style.display = 'none';
   const uc = document.getElementById('unit-complete');
   uc.style.display = 'block';
@@ -2771,6 +2864,177 @@ function exportCSV() {
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
   a.download = 'englishlab_progreso.csv';
   a.click();
+}
+
+// ============================================================
+//  LEADERBOARD
+// ============================================================
+async function loadLeaderboard() {
+  const { data, error } = await sb.from('students')
+    .select('nombre, control_number, xp')
+    .order('xp', { ascending: false })
+    .limit(10);
+  if (error || !data || data.length === 0) return;
+
+  const section = document.getElementById('leaderboard-section');
+  const list = document.getElementById('leaderboard-list');
+  if (!section || !list) return;
+
+  const medals = ['🥇', '🥈', '🥉'];
+  const myCtrl = currentUser.control_number;
+
+  list.innerHTML = data.map((s, i) => {
+    const isMe = s.control_number === myCtrl;
+    const rank = i < 3 ? medals[i] : `${i + 1}`;
+    const name = s.nombre ? s.nombre.split(' ').slice(0, 2).join(' ') : s.control_number;
+    return `<div class="lb-row${isMe ? ' me' : ''}">
+      <span class="lb-rank">${rank}</span>
+      <span class="lb-name">${escHtml(name)}${isMe ? ' <span style="font-size:0.75rem;color:var(--accent)">(tú)</span>' : ''}</span>
+      <span class="lb-xp">⚡ ${s.xp || 0} XP</span>
+    </div>`;
+  }).join('');
+
+  section.style.display = 'block';
+}
+
+// ============================================================
+//  REORDER EXERCISE
+// ============================================================
+let reorderState = { answer: [], bank: [], ex: null };
+
+function buildReorder(ex) {
+  const shuffled = shuffle([...ex.words]);
+  return `
+    <div class="ex-type-badge reorder">🔀 Ordena la oración</div>
+    <div class="ex-instruction">${ex.instruction}</div>
+    <div style="font-size:0.82rem;color:var(--text2);margin-bottom:4px">Toca las palabras en orden correcto:</div>
+    <div class="reorder-bank" id="reorder-bank">
+      ${shuffled.map(w => `<button class="word-chip" data-word="${escHtml(w)}">${escHtml(w)}</button>`).join('')}
+    </div>
+    <div style="font-size:0.82rem;color:var(--text2);margin-bottom:4px">Tu oración:</div>
+    <div class="reorder-answer" id="reorder-answer"></div>
+    <button class="btn-check" id="reorder-check" onclick="checkReorder()" disabled>Verificar ✓</button>
+    <div class="feedback-box" id="feedback"></div>
+    <div class="ex-nav">
+      <span class="ex-counter">Ejercicio ${currentExerciseIdx + 1} de ${currentUnit.exercises.length}</span>
+      <button class="btn-next" id="btn-next" style="display:none" onclick="nextExercise()">Siguiente →</button>
+    </div>
+  `;
+}
+
+function attachReorder(ex) {
+  reorderState = { answer: [], bank: [...ex.words], ex };
+  document.querySelectorAll('#reorder-bank .word-chip').forEach(chip => {
+    chip.addEventListener('click', () => reorderAddWord(chip));
+  });
+}
+
+function reorderAddWord(chip) {
+  if (chip.classList.contains('in-answer') || chip.classList.contains('correct-chip')) return;
+  const word = chip.dataset.word;
+  reorderState.answer.push(word);
+  chip.classList.add('in-answer');
+  renderReorderAnswer();
+}
+
+function reorderRemoveWord(idx) {
+  const word = reorderState.answer[idx];
+  reorderState.answer.splice(idx, 1);
+  // Un-mark one bank chip for this word
+  const chip = [...document.querySelectorAll('#reorder-bank .word-chip')]
+    .find(c => c.dataset.word === word && c.classList.contains('in-answer'));
+  if (chip) chip.classList.remove('in-answer');
+  renderReorderAnswer();
+}
+
+function renderReorderAnswer() {
+  const answerEl = document.getElementById('reorder-answer');
+  const checkBtn = document.getElementById('reorder-check');
+  answerEl.classList.toggle('has-words', reorderState.answer.length > 0);
+  answerEl.innerHTML = reorderState.answer.map((w, i) =>
+    `<button class="word-chip in-answer" onclick="reorderRemoveWord(${i})">${escHtml(w)}</button>`
+  ).join('');
+  if (checkBtn) checkBtn.disabled = reorderState.answer.length !== reorderState.ex.words.length;
+}
+
+function checkReorder() {
+  const { answer, ex } = reorderState;
+  const given = answer.join(' ');
+  const correct = given.toLowerCase() === ex.answer.toLowerCase();
+  sessionTotal++;
+
+  // Lock all chips
+  document.querySelectorAll('.word-chip').forEach(c => {
+    c.classList.add(correct ? 'correct-chip' : 'wrong-chip');
+    c.onclick = null;
+  });
+  document.getElementById('reorder-check').disabled = true;
+
+  if (correct) {
+    sessionCorrect++;
+    earnXP(12);
+    showFeedback(true, '¡Correcto! ' + (ex.explanation || ''), 12);
+  } else {
+    showFeedback(false, `Respuesta correcta: "${ex.answer}"`);
+  }
+  document.getElementById('btn-next').style.display = 'block';
+}
+
+// ============================================================
+//  REPASO RÁPIDO
+// ============================================================
+function startRepaso() {
+  const completedIds = Object.keys(userProgress)
+    .filter(id => userProgress[id].completed)
+    .map(Number);
+  if (completedIds.length === 0) return;
+
+  const pool = [];
+  UNITS.filter(u => completedIds.includes(u.id)).forEach(u => {
+    u.exercises.forEach(ex => {
+      if (['multiple', 'fill', 'listen', 'game', 'reorder'].includes(ex.type)) {
+        pool.push(ex);
+      }
+    });
+  });
+
+  const selected = shuffle([...pool]).slice(0, 6);
+
+  isRepasoMode = true;
+  repasoXPEarned = 0;
+  currentUnit = { id: null, icon: '⚡', title: 'Repaso rápido', titleEs: '', propósito: '', exercises: selected, xpReward: 0 };
+  currentExerciseIdx = 0;
+  sessionCorrect = 0;
+  sessionTotal = 0;
+  pronunAttempts = 0;
+  pronunPassed = false;
+
+  document.getElementById('dashboard').style.display = 'none';
+  const uv = document.getElementById('unit-view');
+  uv.style.display = 'block';
+  document.getElementById('uv-title').textContent = '⚡ Repaso rápido';
+  document.getElementById('uv-sub').textContent = `${selected.length} ejercicios de práctica · XP reducido`;
+  document.getElementById('unit-complete').style.display = 'none';
+  document.getElementById('exercise-container').style.display = 'block';
+
+  buildProgressDots();
+  renderExercise();
+}
+
+function showRepasoComplete() {
+  document.getElementById('exercise-container').style.display = 'none';
+  const uc = document.getElementById('unit-complete');
+  uc.style.display = 'block';
+
+  const acc = sessionTotal > 0 ? Math.round((sessionCorrect / sessionTotal) * 100) : 0;
+  document.querySelector('.complete-emoji').textContent = '⚡';
+  document.querySelector('.complete-title').textContent = '¡Repaso completado!';
+  document.getElementById('complete-xp').textContent = `+${repasoXPEarned} XP ganados`;
+  document.getElementById('complete-stars').textContent = acc >= 85 ? '⭐⭐⭐' : acc >= 60 ? '⭐⭐' : '⭐';
+  document.getElementById('c-correct').textContent = sessionCorrect;
+  document.getElementById('c-total').textContent = sessionTotal;
+  document.getElementById('c-acc').textContent = acc + '%';
+  confetti();
 }
 
 // ============================================================
