@@ -571,6 +571,7 @@ header {
     <div class="leaderboard-section" id="leaderboard-section" style="display:none">
       <h3>Ranking de la clase 🏆</h3>
       <div class="leaderboard-card" id="leaderboard-list"></div>
+      <button id="lb-toggle" style="display:none;margin-top:8px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:6px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;width:100%;transition:all 0.15s" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">Ver top 5 →</button>
     </div>
 
     <!-- REPASO RÁPIDO -->
@@ -2869,32 +2870,53 @@ function exportCSV() {
 // ============================================================
 //  LEADERBOARD
 // ============================================================
+let lbAllData = [];
+
 async function loadLeaderboard() {
   const { data, error } = await sb.from('students')
     .select('nombre, control_number, xp')
+    .not('nombre', 'is', null)
+    .gt('xp', 0)
     .order('xp', { ascending: false })
-    .limit(10);
+    .limit(5);
   if (error || !data || data.length === 0) return;
 
+  lbAllData = data;
   const section = document.getElementById('leaderboard-section');
+  if (!section) return;
+  section.style.display = 'block';
+  renderLeaderboard(3);
+}
+
+function renderLeaderboard(count) {
   const list = document.getElementById('leaderboard-list');
-  if (!section || !list) return;
+  const toggleBtn = document.getElementById('lb-toggle');
+  if (!list) return;
 
   const medals = ['🥇', '🥈', '🥉'];
   const myCtrl = currentUser.control_number;
+  const shown = lbAllData.slice(0, count);
 
-  list.innerHTML = data.map((s, i) => {
+  list.innerHTML = shown.map((s, i) => {
     const isMe = s.control_number === myCtrl;
-    const rank = i < 3 ? medals[i] : `${i + 1}`;
-    const name = s.nombre ? s.nombre.split(' ').slice(0, 2).join(' ') : s.control_number;
+    const name = (s.nombre || s.control_number).split(' ').slice(0, 2).join(' ');
     return `<div class="lb-row${isMe ? ' me' : ''}">
-      <span class="lb-rank">${rank}</span>
-      <span class="lb-name">${escHtml(name)}${isMe ? ' <span style="font-size:0.75rem;color:var(--accent)">(tú)</span>' : ''}</span>
+      <span class="lb-rank">${medals[i] || (i + 1)}</span>
+      <span class="lb-name">${escHtml(name)}${isMe ? ' <span style="font-size:0.72rem;color:var(--accent)">(tú)</span>' : ''}</span>
       <span class="lb-xp">⚡ ${s.xp || 0} XP</span>
     </div>`;
   }).join('');
 
-  section.style.display = 'block';
+  if (toggleBtn) {
+    if (lbAllData.length > 3) {
+      toggleBtn.style.display = 'block';
+      const expanded = count > 3;
+      toggleBtn.textContent = expanded ? 'Ocultar' : 'Ver top 5 →';
+      toggleBtn.onclick = () => renderLeaderboard(expanded ? 3 : 5);
+    } else {
+      toggleBtn.style.display = 'none';
+    }
+  }
 }
 
 // ============================================================
