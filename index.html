@@ -666,6 +666,7 @@ let currentUser = null;
 let userProgress = {};   // { unitId: { completed, xp, correct, total } }
 let isRepasoMode = false;
 let repasoXPEarned = 0;
+let practiceUnitId = null;  // null = repaso aleatorio, número = práctica de tema específico
 let currentUnit = null;
 let currentExerciseIdx = 0;
 let sessionCorrect = 0;
@@ -1997,6 +1998,7 @@ function openUnit(unitId) {
 function backToDashboard() {
   isRepasoMode = false;
   repasoXPEarned = 0;
+  practiceUnitId = null;
   document.getElementById('dashboard').style.display = 'block';
   document.getElementById('unit-view').style.display = 'none';
   document.getElementById('exercise-container').style.display = 'block';
@@ -2735,8 +2737,17 @@ function nextExercise() {
 }
 
 async function earnXP(amount) {
-  const actual = isRepasoMode ? Math.ceil(amount / 2) : amount;
-  if (isRepasoMode) repasoXPEarned += actual;
+  let actual = amount;
+  if (isRepasoMode) {
+    // Base: mitad del XP normal
+    actual = Math.ceil(amount / 2);
+    // Bonus por nivel avanzado: semanas 6-10 +2, semanas 11-15 +3
+    if (practiceUnitId !== null) {
+      if (practiceUnitId >= 11) actual += 3;
+      else if (practiceUnitId >= 6) actual += 2;
+    }
+    repasoXPEarned += actual;
+  }
   currentUser.xp = (currentUser.xp || 0) + actual;
   document.getElementById('header-xp').textContent = currentUser.xp;
   showToast(`⚡ +${actual} XP`);
@@ -3105,8 +3116,13 @@ function openPractice(unitId) {
   const selected = shuffle([...bank]).slice(0, Math.min(5, bank.length));
   localStorage.setItem(key, String((startIdx + 5) % bank.length));
 
+  // XP tier: S1-5 base, S6-10 +2, S11-15 +3
+  const tier = unitId >= 11 ? 'avanzado' : unitId >= 6 ? 'intermedio' : 'básico';
+  const tierXP = unitId >= 11 ? '+3 XP extra' : unitId >= 6 ? '+2 XP extra' : '';
+
   isRepasoMode = true;
   repasoXPEarned = 0;
+  practiceUnitId = unitId;
   currentUnit = { id: null, icon: unit ? unit.icon : '🎯', title: unit ? unit.title : 'Práctica', titleEs: '', propósito: '', exercises: selected, xpReward: 0 };
   currentExerciseIdx = 0;
   sessionCorrect = 0;
@@ -3117,7 +3133,7 @@ function openPractice(unitId) {
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('unit-view').style.display = 'block';
   document.getElementById('uv-title').textContent = `${currentUnit.icon} ${currentUnit.title}`;
-  document.getElementById('uv-sub').textContent = `Práctica extra · ${selected.length} ejercicios · XP reducido`;
+  document.getElementById('uv-sub').textContent = `Práctica · ${selected.length} ejercicios · Nivel ${tier}${tierXP ? ' · ' + tierXP : ''}`;
   document.getElementById('unit-complete').style.display = 'none';
   document.getElementById('exercise-container').style.display = 'block';
   buildProgressDots();
@@ -3130,42 +3146,17 @@ function openPractice(unitId) {
 let lbAllData = [];
 
 async function loadLeaderboard() {
-  // Usar unit_progress para calcular XP real (cada semana cuenta solo una vez, no farmeable)
-  const { data: progData } = await sb
-    .from('unit_progress')
-    .select('student_id, xp_earned')
-    .eq('completed', true);
+  // Usar students.xp que incluye XP de semanas + práctica libre
+  const { data, error } = await sb.from('students')
+    .select('nombre, control_number, xp')
+    .not('nombre', 'is', null)
+    .gt('xp', 0)
+    .order('xp', { ascending: false })
+    .limit(5);
 
-  let lbData = [];
+  if (error || !data || data.length === 0) return;
 
-  if (progData && progData.length > 0) {
-    // Sumar xp_earned por alumno (máx 1 registro por semana gracias al upsert)
-    const xpMap = {};
-    progData.forEach(r => {
-      xpMap[r.student_id] = (xpMap[r.student_id] || 0) + (r.xp_earned || 0);
-    });
-    const sorted = Object.entries(xpMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const ids = sorted.map(([id]) => id);
-    const { data: sts } = await sb.from('students').select('id, nombre, control_number').in('id', ids);
-    if (sts) {
-      lbData = sorted.map(([id, xp]) => {
-        const s = sts.find(st => st.id === id) || {};
-        return { nombre: s.nombre, control_number: s.control_number, xp };
-      }).filter(s => s.nombre);
-    }
-  } else {
-    // Fallback: usar students.xp si no hay acceso a unit_progress
-    const { data } = await sb.from('students')
-      .select('nombre, control_number, xp')
-      .not('nombre', 'is', null)
-      .gt('xp', 0)
-      .order('xp', { ascending: false })
-      .limit(5);
-    lbData = data || [];
-  }
-
-  if (lbData.length === 0) return;
-  lbAllData = lbData;
+  lbAllData = data;
   const section = document.getElementById('leaderboard-section');
   if (!section) return;
   section.style.display = 'block';
@@ -3308,6 +3299,7 @@ function startRepaso() {
 
   isRepasoMode = true;
   repasoXPEarned = 0;
+  practiceUnitId = null;  // repaso aleatorio = sin bonus de nivel
   currentUnit = { id: null, icon: '⚡', title: 'Repaso rápido', titleEs: '', propósito: '', exercises: selected, xpReward: 0 };
   currentExerciseIdx = 0;
   sessionCorrect = 0;
