@@ -3174,7 +3174,7 @@ function renderLeaderboard(count) {
 
   list.innerHTML = shown.map((s, i) => {
     const isMe = s.control_number === myCtrl;
-    const name = (s.nombre || s.control_number).split(' ').slice(0, 2).join(' ');
+    const name = s.nombre || s.control_number;
     return `<div class="lb-row${isMe ? ' me' : ''}">
       <span class="lb-rank">${medals[i] || (i + 1)}</span>
       <span class="lb-name">${escHtml(name)}${isMe ? ' <span style="font-size:0.72rem;color:var(--accent)">(tú)</span>' : ''}</span>
