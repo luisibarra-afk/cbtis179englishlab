@@ -468,6 +468,123 @@ header {
 .practice-icon { font-size:1.6rem; margin-bottom:5px; }
 .practice-label { font-size:0.77rem; font-weight:800; color:var(--text); line-height:1.3; }
 .practice-sub { font-size:0.68rem; color:var(--text2); margin-top:3px; }
+
+/* ===== ZONA DE JEFES ===== */
+.btn-bosses {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  width:100%; padding:14px;
+  background:linear-gradient(135deg,rgba(255,50,50,0.12),rgba(255,140,0,0.08));
+  border:2px solid #cc3333; border-radius:var(--radius); color:#ff7777;
+  font-family:'Nunito',sans-serif; font-weight:800; font-size:1rem; cursor:pointer;
+  transition:all 0.2s; margin-bottom:20px;
+  animation:bossGlow 2.5s ease-in-out infinite;
+}
+.btn-bosses:hover { background:linear-gradient(135deg,rgba(255,50,50,0.25),rgba(255,140,0,0.15)); transform:translateY(-2px); }
+@keyframes bossGlow { 0%,100%{box-shadow:0 0 12px rgba(255,68,68,0.25)} 50%{box-shadow:0 0 28px rgba(255,68,68,0.55)} }
+
+#boss-zone-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:150;
+  align-items:center; justify-content:center; padding:20px;
+}
+#boss-zone-overlay.open { display:flex; }
+.boss-menu {
+  background:var(--card); border:2px solid #aa2222; border-radius:20px;
+  padding:28px 22px; width:100%; max-width:500px;
+  box-shadow:0 0 60px rgba(200,40,40,0.35);
+  max-height:90vh; overflow-y:auto;
+}
+.boss-menu-title { font-size:1.4rem; font-weight:900; text-align:center; color:#ff6666; margin-bottom:4px; }
+.boss-menu-sub { text-align:center; color:var(--text2); font-size:0.84rem; margin-bottom:20px; line-height:1.5; }
+.boss-item {
+  display:flex; align-items:center; gap:14px; padding:14px 16px;
+  background:var(--bg3); border:1px solid var(--border); border-radius:12px; margin-bottom:10px;
+  transition:all 0.2s;
+}
+.boss-item.available { border-color:#aa333344; cursor:pointer; }
+.boss-item.available:hover { border-color:#ff4444; background:rgba(255,68,68,0.08); transform:translateX(4px); }
+.boss-item.defeated { border-color:#43e97b55; background:rgba(67,233,123,0.04); }
+.boss-item.locked { opacity:0.42; }
+.boss-sprite-icon { font-size:2.2rem; flex-shrink:0; }
+.boss-item-info { flex:1; min-width:0; }
+.boss-item-name { font-weight:800; font-size:0.95rem; }
+.boss-item-level { font-size:0.74rem; color:var(--text2); margin-top:2px; }
+.boss-item-status { font-size:0.8rem; font-weight:700; white-space:nowrap; }
+.boss-item-status.tag-defeated { color:#43e97b; }
+.boss-item-status.tag-locked { color:var(--text2); }
+.boss-item-status.tag-fight { color:#ff6666; }
+
+#boss-battle-screen {
+  display:none; position:fixed; inset:0; z-index:160;
+  background:radial-gradient(ellipse at 50% 25%, #200010 0%, #080005 100%);
+  flex-direction:column; overflow:hidden;
+}
+#boss-battle-screen.open { display:flex; }
+.boss-battle-header {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  padding:10px 18px; background:rgba(0,0,0,0.6); border-bottom:1px solid #ff333322;
+  gap:10px;
+}
+.hp-group { display:flex; align-items:center; gap:8px; }
+.hp-label { font-size:0.72rem; color:#ff9999; font-family:'Space Mono',monospace; font-weight:700; white-space:nowrap; }
+.hp-bar-wrap { width:100px; height:10px; background:#2a0000; border-radius:5px; border:1px solid #ff333333; overflow:hidden; }
+.hp-bar { height:100%; background:linear-gradient(90deg,#ff3333,#ff8800); border-radius:5px; transition:width 0.4s ease; }
+.boss-hp-bar-fill { height:100%; background:linear-gradient(90deg,#cc0000,#ff5500); border-radius:5px; transition:width 0.4s ease; }
+.boss-battle-title { font-size:0.88rem; font-weight:800; color:#ff9999; font-family:'Space Mono',monospace; text-align:center; }
+.boss-arena {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:16px 20px; gap:14px;
+}
+.boss-sprite-big {
+  font-size:5.5rem; filter:drop-shadow(0 0 30px rgba(255,60,60,0.7));
+  transition:transform 0.2s; cursor:default; line-height:1;
+}
+.boss-sprite-big.hit { animation:bossHit 0.4s ease; }
+.boss-sprite-big.attack { animation:bossAttack 0.5s ease; }
+@keyframes bossHit { 0%{transform:scale(1) translateX(0)} 30%{transform:scale(0.88) translateX(-12px)} 60%{transform:scale(1.06) translateX(6px)} 100%{transform:scale(1) translateX(0)} }
+@keyframes bossAttack { 0%{transform:scale(1)} 30%{transform:scale(1.2) translateX(18px)} 65%{transform:scale(0.95) translateX(-4px)} 100%{transform:scale(1) translateX(0)} }
+.boss-dialog {
+  background:#000; border:3px solid #eee; border-radius:4px;
+  padding:11px 16px; width:100%; max-width:480px;
+  font-family:'Space Mono',monospace; font-size:0.82rem; color:#fff; line-height:1.6;
+  box-shadow:4px 4px 0 #333; min-height:52px; cursor:pointer;
+}
+.boss-battle-bottom {
+  padding:14px 18px; background:rgba(0,0,0,0.72); border-top:1px solid #ff333322;
+}
+.boss-timer-wrap { width:100%; height:7px; background:#220000; border-radius:4px; margin-bottom:12px; overflow:hidden; }
+.boss-timer-bar { height:100%; background:linear-gradient(90deg,#ff4444,#ffcc00); border-radius:4px; transition:width 1s linear; }
+.boss-timer-bar.urgent { background:linear-gradient(90deg,#ff0000,#ff3333); animation:timerPulse 0.5s ease infinite; }
+@keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:0.55} }
+.boss-question { font-size:1rem; font-weight:700; margin-bottom:12px; line-height:1.4; color:#fff; }
+.boss-choices { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+.boss-choice {
+  background:#160010; border:2px solid #aa333355; border-radius:10px;
+  color:#eee; padding:11px 12px; cursor:pointer; font-family:'Nunito',sans-serif;
+  font-weight:700; font-size:0.9rem; text-align:left; transition:all 0.15s;
+}
+.boss-choice:hover:not(:disabled) { background:#2a0020; border-color:#ff4444; }
+.boss-choice.correct { background:rgba(67,233,123,0.18); border-color:#43e97b; color:#43e97b; }
+.boss-choice.wrong { background:rgba(255,68,68,0.18); border-color:#ff4444; color:#ff9999; }
+.boss-choice:disabled { cursor:default; }
+.damage-number {
+  position:fixed; font-size:1.8rem; font-weight:900; pointer-events:none; z-index:170;
+  font-family:'Space Mono',monospace; text-shadow:2px 2px 0 #000;
+  animation:floatDmg 1.1s ease forwards;
+}
+@keyframes floatDmg { 0%{transform:translateY(0) scale(1.2);opacity:1} 100%{transform:translateY(-70px) scale(0.7);opacity:0} }
+.boss-result {
+  display:none; position:absolute; inset:0; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.87); z-index:10; flex-direction:column; gap:14px; padding:28px;
+}
+.boss-result.show { display:flex; }
+.boss-result-title { font-size:2rem; font-weight:900; text-align:center; }
+.boss-result-sub { font-size:0.95rem; color:var(--text2); text-align:center; }
+.boss-result-xp { font-size:1.2rem; color:var(--accent4); font-weight:800; }
+@media(max-width:600px) {
+  .boss-choices { grid-template-columns:1fr; }
+  .hp-bar-wrap { width:70px; }
+  .boss-sprite-big { font-size:4rem; }
+}
 </style>
 </head>
 <body>
@@ -552,10 +669,53 @@ header {
         <div style="display:flex;gap:8px;flex-shrink:0;margin-left:16px">
           <button onclick="lockAllUnits()" style="background:#ff6b6b22;color:#ff6b6b;border:1px solid #ff6b6b55;padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer">🔒 Bloquear todo</button>
           <button onclick="unlockAllUnits()" style="background:var(--accent3)22;color:var(--accent3);border:1px solid var(--accent3)55;padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer">🔓 Abrir todo</button>
+          <button onclick="recalcularXP()" style="background:rgba(247,151,30,0.15);color:var(--accent4);border:1px solid var(--accent4)55;padding:6px 12px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer">🔄 Recalcular XP</button>
         </div>
       </div>
       <div id="session-locks-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:14px"></div>
     </div>
+  </div>
+</div>
+
+<!-- ZONA DE JEFES — MENÚ DE SELECCIÓN -->
+<div id="boss-zone-overlay">
+  <div class="boss-menu">
+    <div class="boss-menu-title">⚔️ ZONA DE JEFES</div>
+    <div class="boss-menu-sub">Derrota a los 5 jefes en orden para ganar XP y badges exclusivos.<br>¡Responde rápido — el tiempo corre y si no contestas recibes daño!</div>
+    <div id="boss-zone-list"></div>
+    <button onclick="closeBossZone()" style="width:100%;margin-top:8px;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-family:'Nunito',sans-serif;font-weight:700;cursor:pointer;font-size:0.9rem">← Volver</button>
+  </div>
+</div>
+
+<!-- ZONA DE JEFES — PANTALLA DE BATALLA -->
+<div id="boss-battle-screen">
+  <div class="boss-battle-header">
+    <div class="hp-group">
+      <span class="hp-label">❤️ TÚ</span>
+      <div class="hp-bar-wrap"><div class="hp-bar" id="player-hp-bar" style="width:100%"></div></div>
+      <span class="hp-label" id="player-hp-text">100/100</span>
+    </div>
+    <div class="boss-battle-title" id="boss-battle-name">Boss</div>
+    <div class="hp-group">
+      <span class="hp-label">💀</span>
+      <div class="hp-bar-wrap"><div class="boss-hp-bar-fill" id="boss-hp-bar" style="width:100%"></div></div>
+      <span class="hp-label" id="boss-hp-text">100/100</span>
+    </div>
+  </div>
+  <div class="boss-arena">
+    <div class="boss-sprite-big" id="boss-sprite-big" onclick="skipBossDialog()">👻</div>
+    <div class="boss-dialog" id="boss-dialog" onclick="skipBossDialog()">...</div>
+  </div>
+  <div class="boss-battle-bottom">
+    <div class="boss-timer-wrap"><div class="boss-timer-bar" id="boss-timer-bar" style="width:100%"></div></div>
+    <div id="boss-question-area"></div>
+  </div>
+  <div class="boss-result" id="boss-result">
+    <div class="boss-result-title" id="boss-result-title">¡VICTORIA!</div>
+    <div class="boss-result-sub" id="boss-result-sub"></div>
+    <div id="boss-result-badge" style="text-align:center"></div>
+    <div class="boss-result-xp" id="boss-result-xp"></div>
+    <button class="btn-primary" id="boss-result-btn" style="max-width:260px;margin:0 auto">Continuar</button>
   </div>
 </div>
 
@@ -601,6 +761,9 @@ header {
         <div class="progress-bar" id="main-progress-bar" style="width:0%"></div>
       </div>
     </div>
+
+    <!-- ZONA DE JEFES -->
+    <button class="btn-bosses" onclick="openBossZone()">⚔️ ¡Gana más XP combatiendo a los Jefes! ⚔️</button>
 
     <!-- LEADERBOARD -->
     <div class="leaderboard-section" id="leaderboard-section" style="display:none">
@@ -682,6 +845,7 @@ let _waveAudioCtx  = null;
 let _waveAnalyser  = null;
 let _waveStream    = null;
 let teacherLockedUnits = new Set(); // IDs de semanas bloqueadas por el maestro
+let currentUnitWasCompleted = false; // true si el alumno ya completó la lección antes
 
 async function _loadWhisper() {
   if (_whisper) return _whisper;
@@ -1977,6 +2141,7 @@ function openUnit(unitId) {
     showToast('🔒 El maestro aún no ha abierto esta semana');
     return;
   }
+  currentUnitWasCompleted = (userProgress[unitId] || {}).completed === true;
   currentUnit = UNITS.find(u => u.id === unitId);
   currentExerciseIdx = 0;
   sessionCorrect = 0;
@@ -2737,6 +2902,8 @@ function nextExercise() {
 }
 
 async function earnXP(amount) {
+  // Bloquear XP si el alumno está repitiendo una lección ya completada
+  if (currentUnitWasCompleted && !isRepasoMode) return;
   let actual = amount;
   if (isRepasoMode) {
     // Base: mitad del XP normal
@@ -3053,7 +3220,8 @@ function exportCSV() {
 function renderBadgeShowcase() {
   const container = document.getElementById('badge-showcase');
   if (!container) return;
-  container.innerHTML = BLOCKS.map(block => {
+  const bossProgress = loadBossProgress();
+  const blockBadges = BLOCKS.map(block => {
     const blockUnits = block.weeks.map(w => UNITS.find(u => u.id === w)).filter(Boolean);
     const done = blockUnits.filter(u => (userProgress[u.id] || {}).completed).length;
     const earned = done === blockUnits.length;
@@ -3063,6 +3231,15 @@ function renderBadgeShowcase() {
       <div class="bs-prog">${earned ? '✓ Conseguida' : `${done}/${blockUnits.length} semanas`}</div>
     </div>`;
   }).join('');
+  const bossBadges = BOSSES.map(boss => {
+    const earned = bossProgress[boss.id]?.defeated;
+    return `<div class="bs-item${earned ? ' earned' : ''}">
+      <div class="bs-icon">${boss.badge.icon}</div>
+      <div class="bs-name">${boss.badge.name}</div>
+      <div class="bs-prog">${earned ? '✓ Jefe derrotado' : '⚔️ Zona de Jefes'}</div>
+    </div>`;
+  }).join('');
+  container.innerHTML = blockBadges + bossBadges;
 }
 
 // ============================================================
@@ -3334,6 +3511,381 @@ function showRepasoComplete() {
   document.getElementById('c-acc').textContent = acc + '%';
   confetti();
 }
+
+// ============================================================
+//  RECALCULAR XP (maestro)
+// ============================================================
+async function recalcularXP() {
+  if (!confirm('¿Recalcular el XP de todos los alumnos basándose solo en sus semanas completadas? Esto elimina XP inflado por repetición.')) return;
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ Calculando...';
+  try {
+    const { data: students } = await sb.from('students').select('id');
+    const { data: progress } = await sb.from('unit_progress').select('student_id, xp_earned').eq('completed', true);
+    const xpMap = {};
+    (progress || []).forEach(p => { xpMap[p.student_id] = (xpMap[p.student_id] || 0) + (p.xp_earned || 0); });
+    for (const s of (students || [])) {
+      await sb.from('students').update({ xp: xpMap[s.id] || 0 }).eq('id', s.id);
+    }
+    alert('✅ XP recalculado. Todos los alumnos ahora tienen solo el XP base de sus semanas completadas.');
+    await loadTeacherPanel();
+  } catch (e) {
+    alert('❌ Error: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = '🔄 Recalcular XP';
+}
+
+// ============================================================
+//  ZONA DE JEFES — DATOS
+// ============================================================
+const BOSSES = [
+  {
+    id: 1, name: 'El Fantasma Gramatical', sprite: '👻',
+    level: 'A1 — Presente Simple', hp: 100, xpReward: 150,
+    badge: { icon: '👻', name: 'Cazador de Fantasmas', desc: 'Derrotaste al Fantasma Gramatical dominando el presente simple.' },
+    unlockAfterWeek: 3, timePerQ: 20, playerDmg: 20, bossDmg: 25,
+    dialogs: {
+      intro: '¡Graaah! ¡Soy el Fantasma Gramatical! ¿Crees que puedes enfrentarme? ¡El presente simple te destruirá!',
+      bossHit: ['¡Aaargh! ¡Imposible!', '¡Ese golpe duele!', '¡Saber gramática... es cruel!'],
+      playerHit: ['¡Ja! ¡No sabes nada!', '¡Presente simple al ataque!', '¡Verbo incorrecto!'],
+      victory: '¡No puede ser! ¡Un estudiante del CBTis 179 que SABE inglés! ¡Me venciste!',
+      defeat: '¡Mwahahaha! ¡La gramática te ha derrotado! ¡Vuelve cuando sepas el presente simple!'
+    },
+    questions: [
+      { q: 'She ___ to school every day.', choices: ['go', 'goes', 'going', 'went'], answer: 1, exp: 'Con she/he/it usamos "goes" en presente simple.' },
+      { q: '¿Qué significa "always"?', choices: ['nunca', 'siempre', 'a veces', 'rara vez'], answer: 1, exp: '"Always" = siempre.' },
+      { q: 'I ___ breakfast at 7 every morning.', choices: ['have', 'has', 'having', 'had'], answer: 0, exp: 'Con "I" usamos "have" en presente simple.' },
+      { q: '¿Cuál oración es correcta?', choices: ["She don't like cats.", "She doesn't likes cats.", "She doesn't like cats.", "She no like cats."], answer: 2, exp: "Negativo con she: doesn't + verbo base." },
+      { q: 'He ___ TV every night.', choices: ['watch', 'watches', 'watching', 'watched'], answer: 1, exp: 'Con he/she/it añadimos -es/-s al verbo.' }
+    ]
+  },
+  {
+    id: 2, name: 'El Titán del Tiempo', sprite: '⚡',
+    level: 'A1-A2 — Pasado Simple', hp: 150, xpReward: 200,
+    badge: { icon: '⚡', name: 'Dominador del Tiempo', desc: 'Derrotaste al Titán dominando el pasado simple.' },
+    unlockAfterWeek: 6, timePerQ: 18, playerDmg: 25, bossDmg: 30,
+    dialogs: {
+      intro: '¡BOOM! ¡Soy el Titán del Tiempo! ¿Puedes recordar lo que YA OCURRIÓ? ¡El pasado te aplastará!',
+      bossHit: ['¡Eso duele en el pasado!', '¡Tremendo golpe temporal!', '¡Conoces el past simple!'],
+      playerHit: ['¡Pasado irregular al ataque!', '¡No recuerdas el verbo!', '¡El tiempo retrocede!'],
+      victory: '¡El tiempo ha sido conquistado! ¡Me has vencido, estudiante del DGETI!',
+      defeat: '¡El pasado te ha atrapado! ¡Aprende los verbos irregulares!'
+    },
+    questions: [
+      { q: 'Yesterday, she ___ a great movie.', choices: ['watch', 'watched', 'watches', 'watching'], answer: 1, exp: 'Verbos regulares en pasado: añadir -ed.' },
+      { q: '¿Cuál es el pasado de "go"?', choices: ['goed', 'went', 'gone', 'going'], answer: 1, exp: '"Go" es irregular: go → went.' },
+      { q: 'The verb "to be" in past for "he/she" is:', choices: ['am', 'is', 'was', 'were'], answer: 2, exp: 'He/she/it → was (pasado de "is").' },
+      { q: '___ you at school yesterday?', choices: ['Was', 'Were', 'Did', 'Is'], answer: 1, exp: 'You/we/they → were en preguntas de pasado.' },
+      { q: 'She ___ (not) go to the party last night.', choices: ["didn't", "doesn't", "wasn't", "isn't"], answer: 0, exp: "Negación en pasado: didn't + verbo base." }
+    ]
+  },
+  {
+    id: 3, name: 'La Ilusión del Idioma', sprite: '🌀',
+    level: 'A2 — Comparativos y Preposiciones', hp: 200, xpReward: 300,
+    badge: { icon: '🌀', name: 'Maestro de Ilusiones', desc: 'Disipaste la Ilusión dominando comparativos y preposiciones.' },
+    unlockAfterWeek: 10, timePerQ: 15, playerDmg: 30, bossDmg: 40,
+    dialogs: {
+      intro: '¡Bienvenido a mi ilusión! Aquí nada es lo que parece... ¿Sabes comparar y posicionarte en inglés?',
+      bossHit: ['¡Mi ilusión se rompe!', '¡Sabes comparar!', '¡Las preposiciones no te confunden!'],
+      playerHit: ['¡La ilusión te engaña!', '¡Comparativo incorrecto!', '¡Preposición equivocada!'],
+      victory: '¡La ilusión ha caído! ¡Tu inglés es real, no una ilusión!',
+      defeat: '¡Eres parte de mi ilusión ahora! ¡Estudia comparativos y preposiciones!'
+    },
+    questions: [
+      { q: 'English grammar is ___ than Spanish.', choices: ['more easy', 'easier', 'easiest', 'most easy'], answer: 1, exp: 'Adjetivos cortos: añadir -er para comparativo.' },
+      { q: 'The book is ___ the table.', choices: ['in', 'on', 'at', 'to'], answer: 1, exp: '"On" para superficies horizontales.' },
+      { q: 'She is the ___ student in class.', choices: ['more intelligent', 'intelligent', 'most intelligent', 'intelligenter'], answer: 2, exp: 'Superlativo de adjetivos largos: the most + adj.' },
+      { q: 'He arrives ___ 8 AM every day.', choices: ['in', 'on', 'at', 'by'], answer: 2, exp: '"At" se usa con horas específicas.' },
+      { q: 'My car is ___ than yours.', choices: ['fast', 'faster', 'fastest', 'more fast'], answer: 1, exp: 'Comparativo de "fast": fast → faster.' },
+      { q: 'I go to school ___ bus.', choices: ['by', 'in', 'on', 'with'], answer: 0, exp: '"By" para medios de transporte.' }
+    ]
+  },
+  {
+    id: 4, name: 'El Espectro Sintáctico', sprite: '🔥',
+    level: 'A2-B1 — Futuro y Condicionales', hp: 250, xpReward: 400,
+    badge: { icon: '🔥', name: 'Conquistador del Espectro', desc: 'Derrotaste al Espectro con tu dominio del futuro y condicionales.' },
+    unlockAfterWeek: 13, timePerQ: 12, playerDmg: 40, bossDmg: 50,
+    dialogs: {
+      intro: '¡MUAHAHAHA! ¡Soy el Espectro Sintáctico! ¡El futuro te pertenece... si puedes expresarlo!',
+      bossHit: ['¡El condicional me duele!', '¡Sabes el futuro!', '¡Estructura impecable!'],
+      playerHit: ['¡El futuro te aplasta!', '¡Condicional incorrecto!', '¡La sintaxis te destruye!'],
+      victory: '¡El espectro desaparece! ¡Tu sintaxis es impecable, estudiante del DGETI!',
+      defeat: '¡El futuro te pertenece... en la derrota! Estudia más condicionales.'
+    },
+    questions: [
+      { q: 'If I study hard, I ___ pass the exam.', choices: ['will', 'would', 'am', 'might'], answer: 0, exp: 'First conditional: if + present → will + base.' },
+      { q: 'If she ___ rich, she would travel everywhere.', choices: ['is', 'was', 'were', 'be'], answer: 2, exp: 'Second conditional: if + were → would.' },
+      { q: 'The window was broken ___ someone.', choices: ['by', 'for', 'from', 'with'], answer: 0, exp: 'Passive voice: was + past participle + by.' },
+      { q: 'The homework must ___ submitted by Friday.', choices: ['be', 'is', 'are', 'was'], answer: 0, exp: 'Modal + be + past participle: must be done.' },
+      { q: 'She ___ here since Monday.', choices: ['is', 'was', 'has been', 'will be'], answer: 2, exp: 'Present perfect con "since": has/have been.' },
+      { q: "I'll call you ___ I arrive.", choices: ['if', 'when', 'while', 'since'], answer: 1, exp: '"When" para eventos seguros en el futuro.' }
+    ]
+  },
+  {
+    id: 5, name: 'El Overlord del DGETI', sprite: '💀',
+    level: 'B1 — Mezcla Total', hp: 400, xpReward: 750,
+    badge: { icon: '💀', name: 'Leyenda del DGETI', desc: '¡Eres una leyenda! Derrotaste al Overlord del DGETI en el nivel máximo.' },
+    unlockAfterWeek: 15, timePerQ: 10, playerDmg: 50, bossDmg: 80,
+    dialogs: {
+      intro: '¡JA JA JA! ¡SOY EL OVERLORD DEL DGETI! ¡Para derrotarme necesitas dominar TODO el inglés! ¡PREPÁRATE!',
+      bossHit: ['¡ARGH! ¡Eso duele!', '¡Impresionante!', '¡Student Power!', '¡No puede ser!'],
+      playerHit: ['¡OVERLORD POWER!', '¡Advanced grammar crush!', '¡You shall not pass!', '¡B1 attack!'],
+      victory: '¡INCREÍBLE! ¡Has derrotado al Overlord! ¡Eres digno del título de LEYENDA DEL DGETI!',
+      defeat: '¡MWAHAHA! ¡Solo una leyenda puede derrotarme! ¡Vuelve cuando domines el B1 completo!'
+    },
+    questions: [
+      { q: 'By next year, she ___ her degree.', choices: ['will complete', 'will have completed', 'has completed', 'would complete'], answer: 1, exp: 'Future perfect: will have + past participle.' },
+      { q: 'Despite ___ tired, he continued working.', choices: ['be', 'being', 'been', 'to be'], answer: 1, exp: 'Despite + gerund (-ing).' },
+      { q: 'I wish I ___ speak Spanish better.', choices: ['can', 'could', 'will', 'would'], answer: 1, exp: '"Wish" + could para deseos poco probables.' },
+      { q: 'She ___ for this company since 2020.', choices: ['works', 'worked', 'has worked', 'is working'], answer: 2, exp: 'Present perfect con "since": has worked.' },
+      { q: 'If they had studied harder, they ___ passed.', choices: ['will have', 'would have', 'had', 'have'], answer: 1, exp: 'Third conditional: if + had → would have.' },
+      { q: 'The report needs to be ___ by Friday.', choices: ['finish', 'finishing', 'finished', 'to finish'], answer: 2, exp: 'be + past participle en voz pasiva.' },
+      { q: '___ do you think about the project?', choices: ['What', 'How', 'Which', 'Why'], answer: 0, exp: '"What do you think about" = ¿Qué opinas de?' },
+      { q: 'He asked me where I ___.', choices: ['live', 'lived', 'lives', 'am living'], answer: 1, exp: 'Reported speech: backshift presente → pasado.' }
+    ]
+  }
+];
+
+// ============================================================
+//  ZONA DE JEFES — ESTADO Y FUNCIONES
+// ============================================================
+let bossState = { boss:null, bossHP:0, playerHP:100, qIdx:0, questions:[], answered:false, timerInt:null, timeLeft:0 };
+
+function loadBossProgress() {
+  const k = 'boss_prog_' + (currentUser.control_pin || currentUser.control_number);
+  try { return JSON.parse(localStorage.getItem(k) || '{}'); } catch { return {}; }
+}
+function saveBossProgress(data) {
+  const k = 'boss_prog_' + (currentUser.control_pin || currentUser.control_number);
+  localStorage.setItem(k, JSON.stringify(data));
+}
+
+function openBossZone() {
+  const prog = loadBossProgress();
+  const weeksCompleted = Object.keys(userProgress).filter(id => userProgress[id].completed).length;
+  document.getElementById('boss-zone-list').innerHTML = BOSSES.map(boss => {
+    const defeated = prog[boss.id]?.defeated;
+    const prevOk = boss.id === 1 || prog[boss.id - 1]?.defeated;
+    const weekOk = weeksCompleted >= boss.unlockAfterWeek;
+    const available = prevOk && weekOk && !defeated;
+    const locked = !prevOk || !weekOk;
+    let statusHtml, cls;
+    if (defeated) {
+      statusHtml = `<span class="boss-item-status tag-defeated">✅ Derrotado</span>`;
+      cls = 'boss-item defeated';
+    } else if (locked) {
+      const why = !weekOk ? `🔒 Completa ${boss.unlockAfterWeek} semanas (tienes ${weeksCompleted})` : '🔒 Derrota al jefe anterior';
+      statusHtml = `<span class="boss-item-status tag-locked" style="font-size:0.72rem">${why}</span>`;
+      cls = 'boss-item locked';
+    } else {
+      statusHtml = `<span class="boss-item-status tag-fight">⚔️ ¡Desafiar!</span>`;
+      cls = 'boss-item available';
+    }
+    return `<div class="${cls}" ${available ? `onclick="startBossBattle(${boss.id})"` : ''}>
+      <div class="boss-sprite-icon">${boss.sprite}</div>
+      <div class="boss-item-info">
+        <div class="boss-item-name">${boss.name}</div>
+        <div class="boss-item-level">${boss.level} · ❤️ ${boss.hp} HP · ⚡ ${boss.xpReward} XP</div>
+      </div>
+      <div>${statusHtml}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('boss-zone-overlay').classList.add('open');
+}
+
+function closeBossZone() {
+  document.getElementById('boss-zone-overlay').classList.remove('open');
+}
+
+function startBossBattle(bossId) {
+  const boss = BOSSES.find(b => b.id === bossId);
+  if (!boss) return;
+  closeBossZone();
+  currentUnitWasCompleted = false; // permitir earnXP en batalla
+  bossState = { boss, bossHP: boss.hp, playerHP: 100, qIdx: 0, questions: shuffle([...boss.questions]), answered: false, timerInt: null, timeLeft: boss.timePerQ };
+  document.getElementById('boss-battle-name').textContent = boss.name;
+  document.getElementById('boss-sprite-big').textContent = boss.sprite;
+  document.getElementById('boss-result').classList.remove('show');
+  document.getElementById('boss-question-area').innerHTML = '';
+  updateBossHP(); updatePlayerHP();
+  document.getElementById('boss-battle-screen').classList.add('open');
+  showBossDialog(boss.dialogs.intro, () => nextBossQ());
+}
+
+function updateBossHP() {
+  const pct = Math.max(0, Math.round((bossState.bossHP / bossState.boss.hp) * 100));
+  document.getElementById('boss-hp-bar').style.width = pct + '%';
+  document.getElementById('boss-hp-text').textContent = `${bossState.bossHP}/${bossState.boss.hp}`;
+}
+function updatePlayerHP() {
+  const pct = Math.max(0, bossState.playerHP);
+  const bar = document.getElementById('player-hp-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = bossState.playerHP <= 30 ? 'linear-gradient(90deg,#ff0000,#ff4400)' : 'linear-gradient(90deg,#ff3333,#ff8800)';
+  document.getElementById('player-hp-text').textContent = `${bossState.playerHP}/100`;
+}
+
+let _dialogSkip = false;
+let _dialogTid = null;
+function showBossDialog(text, callback) {
+  _dialogSkip = false;
+  const el = document.getElementById('boss-dialog');
+  el.textContent = '';
+  let i = 0;
+  if (_dialogTid) clearTimeout(_dialogTid);
+  function type() {
+    if (_dialogSkip) { el.textContent = text; if (callback) _dialogTid = setTimeout(callback, 400); return; }
+    if (i < text.length) { el.textContent += text[i++]; _dialogTid = setTimeout(type, 18); }
+    else if (callback) { _dialogTid = setTimeout(callback, 700); }
+  }
+  type();
+}
+function skipBossDialog() {
+  _dialogSkip = true;
+}
+
+function nextBossQ() {
+  const { boss, questions, qIdx } = bossState;
+  if (qIdx >= questions.length) {
+    if (bossState.bossHP > 0) { bossState.qIdx = 0; bossState.questions = shuffle([...boss.questions]); nextBossQ(); }
+    return;
+  }
+  const q = questions[qIdx];
+  bossState.answered = false;
+  bossState.timeLeft = boss.timePerQ;
+  document.getElementById('boss-question-area').innerHTML = `
+    <div class="boss-question">${escHtml(q.q)}</div>
+    <div class="boss-choices" id="boss-choices">
+      ${q.choices.map((c, i) => `<button class="boss-choice" data-idx="${i}" onclick="answerBoss(${i})">${escHtml(c)}</button>`).join('')}
+    </div>`;
+  startBossTimer();
+}
+
+function startBossTimer() {
+  clearBossTimer();
+  const bar = document.getElementById('boss-timer-bar');
+  bar.style.width = '100%'; bar.classList.remove('urgent');
+  bossState.timerInt = setInterval(() => {
+    bossState.timeLeft--;
+    const pct = Math.max(0, (bossState.timeLeft / bossState.boss.timePerQ) * 100);
+    bar.style.width = pct + '%';
+    if (bossState.timeLeft <= 5) bar.classList.add('urgent');
+    if (bossState.timeLeft <= 0) { clearBossTimer(); if (!bossState.answered) onBossTimeout(); }
+  }, 1000);
+}
+function clearBossTimer() {
+  if (bossState.timerInt) { clearInterval(bossState.timerInt); bossState.timerInt = null; }
+}
+
+function onBossTimeout() {
+  bossState.answered = true;
+  const q = bossState.questions[bossState.qIdx];
+  document.querySelectorAll('.boss-choice').forEach((b, i) => { b.disabled = true; if (i === q.answer) b.classList.add('correct'); });
+  spawnDmgNum(bossState.boss.playerDmg, '#ff4444', true);
+  bossState.playerHP = Math.max(0, bossState.playerHP - bossState.boss.playerDmg);
+  updatePlayerHP();
+  animateBoss('attack');
+  const msg = pick(bossState.boss.dialogs.playerHit);
+  showBossDialog(`⏰ ¡Tiempo! -${bossState.boss.playerDmg} HP\n${msg}\n📚 ${q.exp}`, () => { bossState.qIdx++; checkBossOutcome(); });
+}
+
+function answerBoss(idx) {
+  if (bossState.answered) return;
+  bossState.answered = true;
+  clearBossTimer();
+  const q = bossState.questions[bossState.qIdx];
+  document.querySelectorAll('.boss-choice').forEach(b => b.disabled = true);
+  if (idx === q.answer) {
+    document.querySelectorAll('.boss-choice')[idx].classList.add('correct');
+    bossState.bossHP = Math.max(0, bossState.bossHP - bossState.boss.bossDmg);
+    updateBossHP();
+    animateBoss('hit');
+    spawnDmgNum(bossState.boss.bossDmg, '#43e97b', false);
+    const msg = pick(bossState.boss.dialogs.bossHit);
+    showBossDialog(`💥 -${bossState.boss.bossDmg} HP al jefe!\n${msg}\n📚 ${q.exp}`, () => { bossState.qIdx++; checkBossOutcome(); });
+  } else {
+    document.querySelectorAll('.boss-choice')[idx].classList.add('wrong');
+    document.querySelectorAll('.boss-choice')[q.answer].classList.add('correct');
+    bossState.playerHP = Math.max(0, bossState.playerHP - bossState.boss.playerDmg);
+    updatePlayerHP();
+    animateBoss('attack');
+    spawnDmgNum(bossState.boss.playerDmg, '#ff4444', true);
+    const msg = pick(bossState.boss.dialogs.playerHit);
+    showBossDialog(`❌ -${bossState.boss.playerDmg} HP tuyo!\n${msg}\n📚 ${q.exp}`, () => { bossState.qIdx++; checkBossOutcome(); });
+  }
+}
+
+function checkBossOutcome() {
+  if (bossState.bossHP <= 0) showBossVictory();
+  else if (bossState.playerHP <= 0) showBossDefeat();
+  else nextBossQ();
+}
+
+async function showBossVictory() {
+  clearBossTimer();
+  const boss = bossState.boss;
+  showBossDialog(boss.dialogs.victory, async () => {
+    const prog = loadBossProgress();
+    prog[boss.id] = { defeated: true, defeatedAt: new Date().toISOString() };
+    saveBossProgress(prog);
+    const savedMode = isRepasoMode;
+    isRepasoMode = false;
+    await earnXP(boss.xpReward);
+    isRepasoMode = savedMode;
+    document.getElementById('boss-result-title').textContent = '¡VICTORIA! 🎉';
+    document.getElementById('boss-result-title').style.color = '#43e97b';
+    document.getElementById('boss-result-sub').textContent = `¡Derrotaste a ${boss.name}!`;
+    document.getElementById('boss-result-xp').textContent = `+${boss.xpReward} XP ganados ⚡`;
+    document.getElementById('boss-result-badge').innerHTML = `<div style="font-size:3rem;margin-bottom:4px">${boss.badge.icon}</div><div style="font-weight:800;color:gold;font-size:0.95rem">${boss.badge.name}</div>`;
+    document.getElementById('boss-result-btn').textContent = '¡Continuar! 🚀';
+    document.getElementById('boss-result-btn').onclick = closeBossBattle;
+    document.getElementById('boss-result').classList.add('show');
+    confetti();
+  });
+}
+
+function showBossDefeat() {
+  clearBossTimer();
+  const boss = bossState.boss;
+  showBossDialog(boss.dialogs.defeat, () => {
+    document.getElementById('boss-result-title').textContent = '¡DERROTA! 💀';
+    document.getElementById('boss-result-title').style.color = '#ff4444';
+    document.getElementById('boss-result-sub').textContent = `${boss.name} te ha vencido esta vez...`;
+    document.getElementById('boss-result-xp').textContent = '0 XP — ¡Inténtalo de nuevo!';
+    document.getElementById('boss-result-badge').innerHTML = '';
+    document.getElementById('boss-result-btn').textContent = '🔁 Reintentar';
+    document.getElementById('boss-result-btn').onclick = () => { document.getElementById('boss-result').classList.remove('show'); startBossBattle(boss.id); };
+    document.getElementById('boss-result').classList.add('show');
+  });
+}
+
+function closeBossBattle() {
+  clearBossTimer();
+  document.getElementById('boss-battle-screen').classList.remove('open');
+  document.getElementById('boss-result').classList.remove('show');
+  renderDashboard();
+}
+
+function animateBoss(type) {
+  const el = document.getElementById('boss-sprite-big');
+  el.classList.remove('hit', 'attack');
+  void el.offsetWidth;
+  el.classList.add(type);
+  setTimeout(() => el.classList.remove(type), 500);
+}
+
+function spawnDmgNum(amount, color, onPlayer) {
+  const el = document.createElement('div');
+  el.className = 'damage-number';
+  el.textContent = `-${amount}`;
+  el.style.color = color;
+  el.style.left = (onPlayer ? 15 : 55) + Math.floor(Math.random() * 12) + '%';
+  el.style.top = (onPlayer ? 75 : 20) + '%';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // ============================================================
 //  BOOT
